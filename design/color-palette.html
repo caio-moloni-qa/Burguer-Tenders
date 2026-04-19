@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Burguer-Tenders — Color diagram</title>
+  <style>
+    :root {
+      --bt-red: #da291c;
+      --bt-yellow: #ffc300;
+      --bt-white: #ffffff;
+      --bt-red-dark: #b71c1c;
+      --bt-yellow-deep: #e6a800;
+      font-family: system-ui, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(145deg, var(--bt-red-dark) 0%, var(--bt-red) 45%, var(--bt-yellow-deep) 100%);
+      color: var(--bt-white);
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.25rem;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+    .subtitle { opacity: 0.95; font-size: 0.95rem; margin-bottom: 2rem; }
+    .diagram {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      max-width: 900px;
+    }
+    .swatch {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      border: 3px solid rgba(255,255,255,0.35);
+    }
+    .swatch-top {
+      height: 100px;
+      display: flex;
+      align-items: flex-end;
+      padding: 0.75rem 1rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .swatch-top.light { color: #1a1a1a; text-shadow: none; }
+    .swatch-top.dark { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+    .swatch-body {
+      background: var(--bt-white);
+      color: #222;
+      padding: 1rem 1rem 1.1rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .hex {
+      font-family: ui-monospace, monospace;
+      font-weight: 600;
+      color: #da291c;
+      font-size: 1rem;
+    }
+    .usage { color: #555; margin-top: 0.35rem; font-size: 0.82rem; }
+    .strip {
+      margin-top: 2.5rem;
+      max-width: 900px;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      height: 56px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      border: 2px solid rgba(255,255,255,0.4);
+    }
+    .strip div {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+    .strip .s-red { background: #da291c; color: #fff; }
+    .strip .s-yellow { background: #ffc300; color: #1a1a1a; }
+    .strip .s-white { background: #fff; color: #1a1a1a; border-left: 1px solid #eee; border-right: 1px solid #eee; }
+    footer {
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      opacity: 0.85;
+      max-width: 900px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Burguer-Tenders</h1>
+  <p class="subtitle">Brand palette — McDonald’s-inspired red, yellow &amp; white</p>
+
+  <div class="diagram" role="img" aria-label="Three main brand colors">
+    <div class="swatch">
+      <div class="swatch-top dark" style="background:#da291c;">Primary red</div>
+      <div class="swatch-body">
+        <span class="hex">#DA291C</span>
+        <p class="usage">Header, nav, primary buttons, key accents, hero bands. Pairs with white text.</p>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-top light" style="background:#ffc300;">Arches yellow</div>
+      <div class="swatch-body">
+        <span class="hex">#FFC300</span>
+        <p class="usage">CTAs, price tags, highlights, icons on red. Use dark text (#1A1A1A) for readability.</p>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-top light" style="background:#ffffff;border-bottom:1px solid #eee;">Paper white</div>
+      <div class="swatch-body">
+        <span class="hex">#FFFFFF</span>
+        <p class="usage">Page background, cards, modals. Text on white: dark gray or primary red for headings.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="strip" aria-hidden="true">
+    <div class="s-red">RED</div>
+    <div class="s-yellow">YELLOW</div>
+    <div class="s-white">WHITE</div>
+  </div>
+
+  <footer>
+    Reference: classic QSR pairing — warm red (#DA291C range), golden yellow (#FFC300 / #FFBC0D family), clean white. Not affiliated with McDonald’s; inspired by the same color story.
+  </footer>
+</body>
+</html>

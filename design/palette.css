@@ -1,0 +1,30 @@
+/**
+ * Burguer-Tenders — design tokens (McDonald’s-adjacent: red, yellow, white)
+ * Import into the SPA root or use as reference when theming.
+ */
+:root {
+  /* Typography — single sans stack, e-commerce friendly weights */
+  --bt-font-sans: "Inter", system-ui, "Segoe UI", sans-serif;
+  --bt-font-normal: 400;
+  --bt-font-medium: 500;
+  --bt-font-semibold: 600;
+  --bt-font-bold: 700;
+
+  /* Core */
+  --bt-red: #da291c;
+  --bt-yellow: #ffc300;
+  --bt-white: #ffffff;
+
+  /* Derivatives (optional) */
+  --bt-red-dark: #b71c1c;
+  --bt-red-hover: #c41e16;
+  --bt-yellow-bright: #ffcd1a;
+  --bt-text-on-light: #1a1a1a;
+  --bt-text-on-red: #ffffff;
+  --bt-text-on-yellow: #1a1a1a;
+
+  /* Surfaces */
+  --bt-bg-page: var(--bt-white);
+  --bt-bg-hero: var(--bt-red);
+  --bt-bg-accent: var(--bt-yellow);
+}

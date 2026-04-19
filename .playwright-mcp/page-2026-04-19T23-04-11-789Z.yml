@@ -1,0 +1,199 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - button "Burguer-Tenders — go to menu" [ref=e5] [cursor=pointer]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: Burguer-Tenders
+          - generic [ref=e8]: the best of both worlds
+      - generic [ref=e9]:
+        - button "Set delivery location" [ref=e11] [cursor=pointer]
+        - button "Open shopping cart" [ref=e12] [cursor=pointer]
+  - main [ref=e13]:
+    - generic [ref=e14]:
+      - heading "Available to buy" [level=2] [ref=e15]
+      - generic [ref=e16]:
+        - generic [ref=e17]: Category
+        - combobox "Filter by category" [ref=e18] [cursor=pointer]:
+          - option "All" [selected]
+          - option "Burgers"
+          - option "Tenders"
+          - option "Combos"
+          - option "Drinks"
+          - option "Sides"
+    - generic [ref=e19]:
+      - article [ref=e20]:
+        - img "Cheeseburguer" [ref=e22]
+        - generic [ref=e23]:
+          - heading "Cheeseburguer" [level=2] [ref=e25]
+          - paragraph [ref=e26]: Beef patty, melted cheese, pickles, onions, ketchup, and mustard on a toasted bun.
+          - paragraph [ref=e27]: $3.49
+          - button "Add to cart" [ref=e28] [cursor=pointer]
+      - article [ref=e29]:
+        - img "Cheeseburguer bacon" [ref=e31]
+        - generic [ref=e32]:
+          - heading "Cheeseburguer bacon" [level=2] [ref=e34]
+          - paragraph [ref=e35]: Our classic cheeseburguer with crispy bacon and creamy mayo on a toasted bun.
+          - paragraph [ref=e36]: $4.99
+          - button "Add to cart" [ref=e37] [cursor=pointer]
+      - article [ref=e38]:
+        - img "Avocado Burguer" [ref=e40]
+        - generic [ref=e41]:
+          - heading "Avocado Burguer" [level=2] [ref=e43]
+          - paragraph [ref=e44]: Fresh avocado spread, beef patty, lettuce, tomato, and a tangy lime aioli on a brioche bun.
+          - paragraph [ref=e45]: $6.49
+          - button "Add to cart" [ref=e46] [cursor=pointer]
+      - article [ref=e47]:
+        - img "BT Special" [ref=e49]
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - heading "BT Special" [level=2] [ref=e52]
+            - generic [ref=e53]: Spicy
+          - paragraph [ref=e54]: Cheeseburguer topped with a fried egg and our signature gochujang sauce — bold heat that builds.
+          - paragraph [ref=e55]: $7.49
+          - button "Add to cart" [ref=e56] [cursor=pointer]
+      - article [ref=e57]:
+        - img "Pack of tenders" [ref=e59]
+        - generic [ref=e60]:
+          - heading "Pack of tenders" [level=2] [ref=e62]
+          - paragraph [ref=e63]: Six golden chicken tenders with your choice of dipping sauce.
+          - paragraph [ref=e64]: $6.99
+          - button "Add to cart" [ref=e65] [cursor=pointer]
+      - article [ref=e66]:
+        - img "Spicy pack of tenders" [ref=e68]
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - heading "Spicy pack of tenders" [level=2] [ref=e71]
+            - generic [ref=e72]: Spicy
+          - paragraph [ref=e73]: Six spicy breaded chicken tenders with heat that builds dip included.
+          - paragraph [ref=e74]: $7.49
+          - button "Add to cart" [ref=e75] [cursor=pointer]
+      - article [ref=e76]:
+        - img "Chicken Tenders + Cheeseburguer" [ref=e78]
+        - generic [ref=e79]:
+          - heading "Chicken Tenders + Cheeseburguer" [level=2] [ref=e81]
+          - paragraph [ref=e82]: Four golden tenders and a classic cheeseburguer — the best of both worlds, served together.
+          - paragraph [ref=e83]: $9.99
+          - button "Add to cart" [ref=e84] [cursor=pointer]
+      - article [ref=e85]:
+        - img "Cheeseburguer Bacon + Plain Fries" [ref=e87]
+        - generic [ref=e88]:
+          - heading "Cheeseburguer Bacon + Plain Fries" [level=2] [ref=e90]
+          - paragraph [ref=e91]: Our crispy-bacon cheeseburguer paired with a generous serving of our golden plain fries.
+          - paragraph [ref=e92]: $8.49
+          - button "Add to cart" [ref=e93] [cursor=pointer]
+      - article [ref=e94]:
+        - img "Spicy Tenders + Chocolate Milkshake" [ref=e96]
+        - generic [ref=e97]:
+          - generic [ref=e98]:
+            - heading "Spicy Tenders + Chocolate Milkshake" [level=2] [ref=e99]
+            - generic [ref=e100]: Spicy
+          - paragraph [ref=e101]: Six fiery spicy tenders balanced with a thick, creamy chocolate milkshake. Fire meets chill.
+          - paragraph [ref=e102]: $10.49
+          - button "Add to cart" [ref=e103] [cursor=pointer]
+      - article [ref=e104]:
+        - img "Tenders + Drink" [ref=e106]
+        - generic [ref=e107]:
+          - heading "Tenders + Drink" [level=2] [ref=e109]
+          - paragraph [ref=e110]: Six golden tenders with any fountain drink of your choice. Simple, satisfying, every time.
+          - paragraph [ref=e111]: $8.99
+          - button "Add to cart" [ref=e112] [cursor=pointer]
+      - article [ref=e113]:
+        - img "Doctor BT" [ref=e115]
+        - generic [ref=e116]:
+          - heading "Doctor BT" [level=2] [ref=e118]
+          - paragraph [ref=e119]: Our house Coke-based specialty soda with a secret twist. Refreshing, sweet, and totally addictive.
+          - paragraph [ref=e120]: $2.99
+          - button "Add to cart" [ref=e121] [cursor=pointer]
+      - article [ref=e122]:
+        - img "Guaraná" [ref=e124]
+        - generic [ref=e125]:
+          - heading "Guaraná" [level=2] [ref=e127]
+          - paragraph [ref=e128]: Classic Brazilian guaraná soda — lightly sweet, fruity, and perfectly fizzy. A taste of Brazil.
+          - paragraph [ref=e129]: $2.99
+          - button "Add to cart" [ref=e130] [cursor=pointer]
+      - article [ref=e131]:
+        - img "Plain BT French Fries" [ref=e133]
+        - generic [ref=e134]:
+          - heading "Plain BT French Fries" [level=2] [ref=e136]
+          - paragraph [ref=e137]: Crispy golden fries, lightly salted. Classic and always the right call.
+          - paragraph [ref=e138]: $3.49
+          - button "Add to cart" [ref=e139] [cursor=pointer]
+      - article [ref=e140]:
+        - img "BT Fries — Lemon Pepper" [ref=e142]
+        - generic [ref=e143]:
+          - heading "BT Fries — Lemon Pepper" [level=2] [ref=e145]
+          - paragraph [ref=e146]: Golden fries tossed in a bright lemon-pepper seasoning. Zesty, savory, impossible to stop eating.
+          - paragraph [ref=e147]: $3.99
+          - button "Add to cart" [ref=e148] [cursor=pointer]
+      - article [ref=e149]:
+        - img "Chocolate Milkshake" [ref=e151]
+        - generic [ref=e152]:
+          - heading "Chocolate Milkshake" [level=2] [ref=e154]
+          - paragraph [ref=e155]: Thick and creamy hand-spun chocolate milkshake made with real cocoa. Served ice cold.
+          - paragraph [ref=e156]: $4.49
+          - button "Add to cart" [ref=e157] [cursor=pointer]
+      - article [ref=e158]:
+        - img "Strawberry Milkshake" [ref=e160]
+        - generic [ref=e161]:
+          - heading "Strawberry Milkshake" [level=2] [ref=e163]
+          - paragraph [ref=e164]: Hand-spun strawberry milkshake bursting with fresh berry flavor. Sweet, pink, and perfect.
+          - paragraph [ref=e165]: $4.49
+          - button "Add to cart" [ref=e166] [cursor=pointer]
+  - generic:
+    - button
+    - dialog:
+      - generic:
+        - heading [level=2]: Cart
+        - button: ×
+      - generic:
+        - paragraph: Your cart is empty.
+      - generic:
+        - generic:
+          - generic: Subtotal
+          - strong: $0.00
+        - generic:
+          - button [disabled]: Go to checkout
+  - generic:
+    - button
+    - dialog:
+      - generic:
+        - heading [level=2]: Your location
+        - button: ×
+      - generic:
+        - paragraph: "Choose country and postal code, then look up your address (Brazil: ViaCEP; US & others: OpenStreetMap — no API key). You can edit every field before saving. We only deliver where a store serves your city."
+        - generic:
+          - paragraph: Stores (United States)
+          - list:
+            - listitem:
+              - text: Burguer-Tenders Midtown
+              - generic: New York, NY
+        - paragraph:
+          - text: Enter your ZIP and use
+          - strong: Look up address
+          - text: to see if we deliver to you.
+        - generic: Country
+        - combobox
+        - generic:
+          - generic:
+            - generic: ZIP / Postal code
+            - textbox
+          - button: Look up address
+        - generic: Street address
+        - textbox:
+          - /placeholder: Street number and name
+        - generic: Neighborhood
+        - textbox
+        - generic:
+          - generic:
+            - text: City
+            - textbox
+          - generic:
+            - text: State / Province
+            - textbox
+        - generic: Country (from lookup)
+        - textbox
+        - generic: Complement
+        - textbox:
+          - /placeholder: Apt, floor, reference…
+      - generic:
+        - button: Save location
