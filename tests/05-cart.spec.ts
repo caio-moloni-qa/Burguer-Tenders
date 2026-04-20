@@ -26,9 +26,13 @@ test.describe("Suite 05 — Cart", () => {
   });
 
   test("TC-05-04 — Toast notification appears after adding", async ({ page }) => {
+    // Toast text is locale-aware:
+    //   en-US → "Cheeseburguer was successfully added to cart!"
+    //   pt-BR → "Cheeseburguer foi adicionado ao carrinho com sucesso!"
+    // Asserting on the product name is locale-agnostic and unambiguous.
     await page.click(`[data-product-id="${PRODUCT_ID}"] [data-testid="add-to-cart"]`);
     await expect(page.locator('[data-testid="cart-toast"]')).toBeVisible();
-    await expect(page.locator('[data-testid="cart-toast"]')).toContainText(/added to cart/i);
+    await expect(page.locator('[data-testid="cart-toast"]')).toContainText("Cheeseburguer");
   });
 
   test("TC-05-05 — Toast auto-hides within 3 seconds", async ({ page }) => {
@@ -65,6 +69,9 @@ test.describe("Suite 05 — Cart", () => {
     await page.click('[data-testid="cart-toggle"]');
     await page.click('[data-action="remove-line"]');
     await expect(page.locator('[data-testid="cart-count"]')).toHaveText("0");
+    // Locale-agnostic: just assert the empty-state element is visible
+    // (text is "Your cart is empty." in en-US, "Seu carrinho está vazio." in pt-BR)
+    await expect(page.locator('.cart-drawer__empty')).toBeVisible();
   });
 
   test("TC-05-09 — Cart subtotal matches sum of line totals", async ({ page }) => {
@@ -76,10 +83,11 @@ test.describe("Suite 05 — Cart", () => {
   });
 
   test("TC-05-10 — Cart requires a saved location to add products", async ({ page }) => {
-    // Reload page so no location is saved
+    // Clear the session cookie set by beforeEach so that the reload starts
+    // with no saved delivery location (server creates a fresh empty session).
+    await page.context().clearCookies();
     await page.reload();
     await page.click(`[data-product-id="${PRODUCT_ID}"] [data-testid="add-to-cart"]`);
-    // App should prompt for location first
     await expect(page.locator('[data-testid="location-panel"]')).toBeVisible();
   });
 });

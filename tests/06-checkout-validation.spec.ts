@@ -54,7 +54,7 @@ test.describe("Suite 06 — Checkout Form Validation", () => {
     await page.fill('[data-testid="checkout-card-expiry"]', "1228");
     await page.fill('[data-testid="checkout-card-cvc"]', "123");
     await page.click('[data-testid="place-order"]');
-    await expect(page.locator('[data-testid="error-card-name"]')).toBeVisible();
+    await expect(page.locator('[data-testid="checkout-error-cardNameOnCard"]')).toBeVisible();
   });
 
   test("TC-06-06 — Card number with fewer than 13 digits shows error", async ({ page }) => {

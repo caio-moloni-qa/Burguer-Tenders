@@ -1,5 +1,6 @@
 import type { CartStore } from "../cart/cartStore";
 import { getStoreDisplayName } from "../data/stores";
+import { t } from "../i18n/locale";
 import { getLocationPanelOpen, hasDeliveryLocation, locationDelivery } from "../location/location";
 import type { Product, ProductCategory } from "../types/product";
 import { escapeHtml, formatPrice, renderCartDrawerFoot, renderCartLines } from "./cartHtml";
@@ -9,16 +10,19 @@ import { renderLocationLayer } from "./locationLayerHtml";
 
 type MenuFilter = "all" | ProductCategory;
 
-const FILTER_LABELS: Record<MenuFilter, string> = {
-  all: "All",
-  burger: "Burgers",
-  tenders: "Tenders",
-  combo: "Combos",
-  drink: "Drinks",
-  side: "Sides",
-};
-
 const ALL_FILTERS: MenuFilter[] = ["all", "burger", "tenders", "combo", "drink", "side"];
+
+function getFilterLabel(f: MenuFilter): string {
+  const map: Record<MenuFilter, Parameters<typeof t>[0]> = {
+    all:     "categoryAll",
+    burger:  "categoryBurger",
+    tenders: "categoryTender",
+    combo:   "categoryCombo",
+    drink:   "categoryDrink",
+    side:    "categorySide",
+  };
+  return t(map[f]);
+}
 
 let activeFilter: MenuFilter = "all";
 
@@ -63,12 +67,12 @@ export function renderMenu(
         <div class="product-card__body">
           <div class="product-card__meta">
             <h2 class="product-card__name">${escapeHtml(p.name)}</h2>
-            ${p.spicy ? '<span class="product-card__badge">Spicy</span>' : ""}
+            ${p.spicy ? `<span class="product-card__badge">${t("spicyBadge")}</span>` : ""}
           </div>
           <p class="product-card__desc">${escapeHtml(p.description)}</p>
           <p class="product-card__price" data-price-usd="${p.priceUsd}">${formatPrice(p.priceUsd)}</p>
-          <button type="button" class="product-card__add" data-action="add-to-cart" data-product-id="${escapeHtml(p.id)}" data-testid="add-to-cart" title="${canAddToCart ? "Add to cart" : "Set your delivery location first"}">
-            Add to cart
+          <button type="button" class="product-card__add" data-action="add-to-cart" data-product-id="${escapeHtml(p.id)}" data-testid="add-to-cart" title="${canAddToCart ? t("menuAddToCart") : t("menuAddToCartHint")}">
+            ${t("menuAddToCart")}
           </button>
         </div>
       </article>`
@@ -76,19 +80,19 @@ export function renderMenu(
     .join("");
 
   const emptyState = filtered.length === 0
-    ? `<p class="menu__empty">No items in this category yet.</p>`
+    ? `<p class="menu__empty">${t("menuNoItems")}</p>`
     : "";
 
   const filterOptions = ALL_FILTERS.map(
     (f) =>
-      `<option value="${f}" ${activeFilter === f ? "selected" : ""}>${escapeHtml(FILTER_LABELS[f])}</option>`
+      `<option value="${f}" ${activeFilter === f ? "selected" : ""}>${escapeHtml(getFilterLabel(f))}</option>`
   ).join("");
 
   const locationOpen = getLocationPanelOpen();
   document.body.classList.toggle("cart-open", drawerOpen || locationOpen);
 
   const storeBanner = locationDelivery.storeId.trim()
-    ? `<p class="menu__store-banner" data-testid="menu-store-banner">Ordering from <strong>${escapeHtml(getStoreDisplayName(locationDelivery.storeId))}</strong></p>`
+    ? `<p class="menu__store-banner" data-testid="menu-store-banner">${t("menuOrderingFrom")} <strong>${escapeHtml(getStoreDisplayName(locationDelivery.storeId))}</strong></p>`
     : "";
 
   container.innerHTML = `
@@ -101,9 +105,9 @@ export function renderMenu(
     <main class="menu">
       ${storeBanner}
       <div class="menu__toolbar">
-        <h2 class="menu__heading">Available to buy</h2>
+        <h2 class="menu__heading">${t("menuHeading")}</h2>
         <div class="menu__filter-wrap">
-          <label class="menu__filter-label" for="menu-category-filter">Category</label>
+          <label class="menu__filter-label" for="menu-category-filter">${t("menuCategoryLabel")}</label>
           <select
             id="menu-category-filter"
             class="menu__filter-select"
@@ -121,7 +125,7 @@ export function renderMenu(
       <button type="button" class="cart-backdrop" data-action="close-cart" aria-label="Close cart" tabindex="${drawerOpen ? 0 : -1}"></button>
       <aside class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-drawer-title" data-testid="cart-drawer">
         <div class="cart-drawer__head">
-          <h2 id="cart-drawer-title" class="cart-drawer__title">Cart</h2>
+          <h2 id="cart-drawer-title" class="cart-drawer__title">${t("cartTitle")}</h2>
           <button type="button" class="cart-drawer__close" data-action="close-cart" aria-label="Close cart">&times;</button>
         </div>
         <div class="cart-drawer__body">

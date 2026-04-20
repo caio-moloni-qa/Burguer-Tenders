@@ -1,3 +1,5 @@
+import { t } from "../i18n/locale";
+
 const HIDE_AFTER_MS = 2500;
 const FADE_OUT_MS = 350;
 
@@ -26,7 +28,7 @@ export function showCartToast(itemName: string): void {
     hideTimer = null;
   }
 
-  el.textContent = `${itemName} was successfully added to cart!`;
+  el.textContent = t("toastAddedToCart", { item: itemName });
   el.classList.remove("toast--hiding");
   el.classList.add("toast--visible");
 

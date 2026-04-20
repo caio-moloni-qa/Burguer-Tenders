@@ -4,6 +4,7 @@ import { checkoutForm } from "../checkout/checkoutForm";
 import { getProductById } from "../data/products";
 import { getLocationPanelOpen, locationDelivery } from "../location/location";
 import { getStoreDisplayName } from "../data/stores";
+import { t } from "../i18n/locale";
 import {
   cartSubtotal,
   escapeHtml,
@@ -74,13 +75,13 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
     <main class="checkout-page" data-testid="checkout-page">
       <div class="checkout-page__inner">
         <button type="button" class="checkout-back" data-action="back-to-shop" data-testid="back-to-shop">
-          ← Back to menu
+          ${t("checkoutBackToMenu")}
         </button>
-        <h2 class="checkout-page__title">Checkout</h2>
+        <h2 class="checkout-page__title">${t("checkoutTitle")}</h2>
         <form class="checkout-form" id="checkout-form" data-testid="checkout-form" novalidate>
           <fieldset class="checkout-fieldset">
-            <legend class="checkout-fieldset__legend">Your details</legend>
-            <label class="checkout-label" for="checkout-name">Name</label>
+            <legend class="checkout-fieldset__legend">${t("checkoutSectionDetails")}</legend>
+            <label class="checkout-label" for="checkout-name">${t("checkoutName")}</label>
             <input
               class="${errClass("fullName")}"
               id="checkout-name"
@@ -94,7 +95,7 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
               value="${escapeHtml(f.fullName)}"
             />
             ${errBlock("fullName", "checkout-name-error")}
-            <label class="checkout-label" for="checkout-email">Email</label>
+            <label class="checkout-label" for="checkout-email">${t("checkoutEmail")}</label>
             <input
               class="${errClass("email")}"
               id="checkout-email"
@@ -110,17 +111,17 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
             ${errBlock("email", "checkout-email-error")}
           </fieldset>
           <fieldset class="checkout-fieldset">
-            <legend class="checkout-fieldset__legend">Delivery address</legend>
+            <legend class="checkout-fieldset__legend">${t("checkoutSectionDelivery")}</legend>
             ${storeName ? `<p class="checkout-delivery__store" data-testid="checkout-store-name">${escapeHtml(storeName)}</p>` : ""}
-            ${roField("checkout-zip",          "ZIP / Postal code",   zipValue,       "checkout-zip")}
-            ${roField("checkout-street",       "Street address",      d.streetLine,   "checkout-street")}
-            ${roField("checkout-neighborhood", "Neighborhood",        d.neighborhood, "checkout-neighborhood")}
-            ${roField("checkout-city-state",   "City / State",        cityState,      "checkout-city-state")}
-            ${roField("checkout-country",      "Country",             d.country,      "checkout-country")}
-            ${d.complement.trim() ? roField("checkout-complement", "Complement", d.complement, "checkout-complement") : ""}
+            ${roField("checkout-zip",          t("checkoutZip"),          zipValue,       "checkout-zip")}
+            ${roField("checkout-street",       t("checkoutStreet"),       d.streetLine,   "checkout-street")}
+            ${roField("checkout-neighborhood", t("checkoutNeighborhood"), d.neighborhood, "checkout-neighborhood")}
+            ${roField("checkout-city-state",   t("checkoutCityState"),    cityState,      "checkout-city-state")}
+            ${roField("checkout-country",      t("checkoutCountry"),      d.country,      "checkout-country")}
+            ${d.complement.trim() ? roField("checkout-complement", t("checkoutComplement"), d.complement, "checkout-complement") : ""}
           </fieldset>
           <fieldset class="checkout-fieldset">
-            <legend class="checkout-fieldset__legend">Payment</legend>
+            <legend class="checkout-fieldset__legend">${t("checkoutSectionPayment")}</legend>
             <div class="checkout-radios" role="radiogroup" aria-label="Payment method">
               <label class="checkout-radio">
                 <input
@@ -131,7 +132,7 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
                   data-checkout-payment
                   data-testid="payment-card"
                 />
-                <span>Credit/debit card</span>
+                <span>${t("checkoutPayCard")}</span>
               </label>
               <label class="checkout-radio">
                 <input
@@ -142,7 +143,7 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
                   data-checkout-payment
                   data-testid="payment-restaurant"
                 />
-                <span>Pay in restaurant</span>
+                <span>${t("checkoutPayRestaurant")}</span>
               </label>
             </div>
             <div
@@ -150,8 +151,8 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
               data-testid="card-details"
               ${showCardFields ? "" : "hidden"}
             >
-              <p class="checkout-card-fields__hint">Card details</p>
-              <label class="checkout-label" for="checkout-card-name">Name on card</label>
+              <p class="checkout-card-fields__hint">${t("checkoutCardDetails")}</p>
+              <label class="checkout-label" for="checkout-card-name">${t("checkoutCardName")}</label>
               <input
                 class="${errClass("cardNameOnCard")}"
                 id="checkout-card-name"
@@ -165,7 +166,7 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
                 value="${escapeHtml(f.cardNameOnCard)}"
               />
               ${errBlock("cardNameOnCard", "checkout-card-name-error")}
-              <label class="checkout-label" for="checkout-card-number">Card number</label>
+              <label class="checkout-label" for="checkout-card-number">${t("checkoutCardNumber")}</label>
               <input
                 class="${errClass("cardNumber")}"
                 id="checkout-card-number"
@@ -184,7 +185,7 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
               ${errBlock("cardNumber", "checkout-card-number-error")}
               <div class="checkout-card-row">
                 <div class="checkout-card-row__field">
-                  <label class="checkout-label" for="checkout-card-expiry">Expiry</label>
+                  <label class="checkout-label" for="checkout-card-expiry">${t("checkoutExpiry")}</label>
                   <input
                     class="${errClass("cardExpiry")}"
                     id="checkout-card-expiry"
@@ -204,7 +205,7 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
                   ${errBlock("cardExpiry", "checkout-card-expiry-error")}
                 </div>
                 <div class="checkout-card-row__field">
-                  <label class="checkout-label" for="checkout-card-cvc">Security code</label>
+                  <label class="checkout-label" for="checkout-card-cvc">${t("checkoutSecurityCode")}</label>
                   <input
                     class="${errClass("cardCvc")}"
                     id="checkout-card-cvc"
@@ -227,17 +228,17 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
             </div>
           </fieldset>
           <section class="checkout-summary" aria-labelledby="checkout-summary-title">
-            <h3 id="checkout-summary-title" class="checkout-summary__title">Order summary</h3>
+            <h3 id="checkout-summary-title" class="checkout-summary__title">${t("checkoutOrderSummary")}</h3>
             <div class="checkout-summary__lines" data-testid="checkout-summary-lines">
               ${renderOrderSummary(cart)}
             </div>
             <div class="checkout-summary__total">
-              <span>Subtotal</span>
+              <span>${t("checkoutSubtotal")}</span>
               <strong data-testid="checkout-subtotal">${formatPrice(subtotal)}</strong>
             </div>
           </section>
           <button type="submit" class="checkout-submit" data-testid="place-order">
-            Place order
+            ${t("checkoutPlaceOrder")}
           </button>
         </form>
       </div>
@@ -246,7 +247,7 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
       <button type="button" class="cart-backdrop" data-action="close-cart" aria-label="Close cart" tabindex="${drawerOpen ? 0 : -1}"></button>
       <aside class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-drawer-title" data-testid="cart-drawer">
         <div class="cart-drawer__head">
-          <h2 id="cart-drawer-title" class="cart-drawer__title">Cart</h2>
+          <h2 id="cart-drawer-title" class="cart-drawer__title">${t("cartTitle")}</h2>
           <button type="button" class="cart-drawer__close" data-action="close-cart" aria-label="Close cart">&times;</button>
         </div>
         <div class="cart-drawer__body">
@@ -262,7 +263,7 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
 function renderOrderSummary(cart: CartStore): string {
   const lines = cart.getLines();
   if (lines.length === 0) {
-    return '<p class="checkout-summary__empty">No items in cart.</p>';
+    return `<p class="checkout-summary__empty">${t("checkoutNoItems")}</p>`;
   }
   return `<ul class="checkout-order-lines">
     ${lines

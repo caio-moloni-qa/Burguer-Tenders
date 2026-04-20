@@ -1,4 +1,5 @@
 import { listStoresForCountry, resolveStoreForDelivery } from "../data/stores";
+import { t } from "../i18n/locale";
 import {
   getLocationLookupError,
   getLocationLookupLoading,
@@ -15,8 +16,9 @@ export function buildStoresBlockHtml(countryCode: string): string {
       return `<li class="location-drawer__store-item"><span class="location-drawer__store-item-name">${escapeHtml(s.displayName)}</span><span class="location-drawer__store-item-area">${escapeHtml(areas)}</span></li>`;
     })
     .join("");
+  const title = countryCode === "BR" ? t("locationStoresTitleBR") : t("locationStoresTitleUS");
   return `
-    <p class="location-drawer__stores-title">Stores (${countryCode === "BR" ? "Brazil" : "United States"})</p>
+    <p class="location-drawer__stores-title">${title}</p>
     <ul class="location-drawer__store-list">${storeListItems}</ul>
   `;
 }
@@ -30,12 +32,12 @@ export function buildStoreStatusHtml(d: {
   const resolved = resolveStoreForDelivery(d);
   const hasCityState = d.city.trim().length > 0 && d.state.trim().length > 0;
   if (resolved) {
-    return `<p class="location-drawer__store-status location-drawer__store-status--ok" data-testid="location-store-status">Delivery available from <strong>${escapeHtml(resolved.displayName)}</strong></p>`;
+    return `<p class="location-drawer__store-status location-drawer__store-status--ok" data-testid="location-store-status">${t("locationStoreAvailable", { store: escapeHtml(resolved.displayName) })}</p>`;
   }
   if (hasCityState) {
-    return `<p class="location-drawer__store-status location-drawer__store-status--bad" role="status" data-testid="location-store-status">We don't deliver to this city yet. Try another ZIP in the areas listed below.</p>`;
+    return `<p class="location-drawer__store-status location-drawer__store-status--bad" role="status" data-testid="location-store-status">${t("locationStoreUnavailable")}</p>`;
   }
-  return `<p class="location-drawer__store-status location-drawer__store-status--hint" data-testid="location-store-status">Enter your ZIP and use <strong>Look up address</strong> to see if we deliver to you.</p>`;
+  return `<p class="location-drawer__store-status location-drawer__store-status--hint" data-testid="location-store-status">${t("locationStoreHint")}</p>`;
 }
 
 export function renderLocationLayer(open: boolean): string {
@@ -63,18 +65,18 @@ export function renderLocationLayer(open: boolean): string {
         data-testid="location-panel"
       >
         <div class="location-drawer__head">
-          <h2 id="location-drawer-title" class="location-drawer__title">Your location</h2>
+          <h2 id="location-drawer-title" class="location-drawer__title">${t("locationPanelTitle")}</h2>
           <button type="button" class="location-drawer__close" data-action="close-location" aria-label="Close">&times;</button>
         </div>
         <div class="location-drawer__body">
           <p class="location-drawer__intro">
-            Choose country and postal code, then look up your address (Brazil: ViaCEP; US &amp; others: OpenStreetMap — no API key). You can edit every field before saving. We only deliver where a store serves your city.
+            ${t("locationIntro")}
           </p>
           <div class="location-drawer__stores" data-testid="location-stores-list">
             ${buildStoresBlockHtml(d.countryCode)}
           </div>
           ${storeStatusBlock}
-          <label class="location-label" for="location-country">Country</label>
+          <label class="location-label" for="location-country">${t("locationCountryLabel")}</label>
           <select
             class="location-input location-select"
             id="location-country"
@@ -83,12 +85,12 @@ export function renderLocationLayer(open: boolean): string {
             data-location-field="countryCode"
             data-testid="location-country"
           >
-            <option value="US" ${usSel}>United States</option>
-            <option value="BR" ${brSel}>Brazil</option>
+            <option value="US" ${usSel}>${t("locationCountryUS")}</option>
+            <option value="BR" ${brSel}>${t("locationCountryBR")}</option>
           </select>
           <div class="location-zip-row">
             <div class="location-zip-row__field">
-              <label class="location-label" for="location-zip">ZIP / Postal code</label>
+              <label class="location-label" for="location-zip">${t("locationZip")}</label>
               <input
                 class="location-input"
                 id="location-zip"
@@ -109,24 +111,24 @@ export function renderLocationLayer(open: boolean): string {
               ${loading ? "disabled" : ""}
             >
               ${loading
-              ? `<span class="location-lookup-btn__spinner" aria-hidden="true"></span><span class="sr-only">Looking up…</span>`
-              : "Look up address"}
+              ? `<span class="location-lookup-btn__spinner" aria-hidden="true"></span><span class="sr-only">${t("locationLookingUp")}</span>`
+              : t("locationLookupBtn")}
             </button>
           </div>
           ${errBlock}
-          <label class="location-label" for="location-street">Street address</label>
+          <label class="location-label" for="location-street">${t("locationStreet")}</label>
           <input
             class="location-input"
             id="location-street"
             name="streetLine"
             type="text"
             autocomplete="street-address"
-            placeholder="Street number and name"
+            placeholder="${t("locationStreetPlaceholder")}"
             data-location-field="streetLine"
             data-testid="location-street"
             value="${escapeHtml(d.streetLine)}"
           />
-          <label class="location-label" for="location-neighborhood">Neighborhood</label>
+          <label class="location-label" for="location-neighborhood">${t("locationNeighborhood")}</label>
           <input
             class="location-input"
             id="location-neighborhood"
@@ -138,7 +140,7 @@ export function renderLocationLayer(open: boolean): string {
           />
           <div class="location-two-col">
             <div>
-              <label class="location-label" for="location-city">City</label>
+              <label class="location-label" for="location-city">${t("locationCity")}</label>
               <input
                 class="location-input"
                 id="location-city"
@@ -151,7 +153,7 @@ export function renderLocationLayer(open: boolean): string {
               />
             </div>
             <div>
-              <label class="location-label" for="location-state">State / Province</label>
+              <label class="location-label" for="location-state">${t("locationStateProv")}</label>
               <input
                 class="location-input"
                 id="location-state"
@@ -164,7 +166,7 @@ export function renderLocationLayer(open: boolean): string {
               />
             </div>
           </div>
-          <label class="location-label" for="location-country-name">Country (from lookup)</label>
+          <label class="location-label" for="location-country-name">${t("locationCountryFromLookup")}</label>
           <input
             class="location-input"
             id="location-country-name"
@@ -175,14 +177,14 @@ export function renderLocationLayer(open: boolean): string {
             data-testid="location-country-name"
             value="${escapeHtml(d.country)}"
           />
-          <label class="location-label" for="location-complement">Complement</label>
+          <label class="location-label" for="location-complement">${t("locationComplement")}</label>
           <input
             class="location-input"
             id="location-complement"
             name="locationComplement"
             type="text"
             autocomplete="address-line2"
-            placeholder="Apt, floor, reference…"
+            placeholder="${t("locationComplementPlaceholder")}"
             data-location-field="complement"
             data-testid="location-complement"
             value="${escapeHtml(d.complement)}"
@@ -193,8 +195,8 @@ export function renderLocationLayer(open: boolean): string {
             ${loading ? "disabled" : ""}
           >
             ${loading
-              ? `<span class="location-lookup-btn__spinner" aria-hidden="true"></span><span class="sr-only">Saving…</span>`
-              : "Save location"}
+              ? `<span class="location-lookup-btn__spinner" aria-hidden="true"></span><span class="sr-only">${t("locationSaving")}</span>`
+              : t("locationSaveBtn")}
           </button>
         </div>
       </aside>

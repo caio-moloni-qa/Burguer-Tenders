@@ -14,6 +14,7 @@ import { getProductById, products } from "./data/products";
 import {
   clearLookupErrorSilent,
   closeLocationPanel,
+  emitLocationChange,
   getLocationLookupLoading,
   getLocationPanelOpen,
   hasDeliveryLocation,
@@ -29,6 +30,7 @@ import {
   syncResolvedStoreFromAddress,
   toggleLocationPanel,
 } from "./location/location";
+import { setLocale } from "./i18n/locale";
 import { getView, setView, subscribeView } from "./navigation";
 import { renderCheckoutView } from "./ui/checkoutView";
 import { renderConfirmationView } from "./ui/confirmationView";
@@ -259,6 +261,15 @@ async function runPostalLookup(): Promise<void> {
     markDeliveryUnsaved();
     syncResolvedStoreFromAddress();
     lookupLoadingEnd();
+
+    // If a store was resolved, apply the locale for that country and do a full
+    // re-render so every string and price across the whole UI updates at once.
+    if (locationDelivery.storeId) {
+      setLocale(locationDelivery.countryCode);
+      emitLocationChange();
+      return;
+    }
+
     patchLookupDOM({
       loading: false,
       fields: {
@@ -514,6 +525,11 @@ void fetchDelivery()
       setDeliveryFromServer(d);
       syncResolvedStoreFromAddress();
       markDeliverySynced();
+      // Restore locale from the persisted country so the UI is already
+      // translated on page load when a Brazilian location was previously saved.
+      if (d.countryCode) {
+        setLocale(d.countryCode);
+      }
     }
     render();
   })

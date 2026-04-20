@@ -1,6 +1,7 @@
 import type { CartStore } from "../cart/cartStore";
-import { escapeHtml } from "./cartHtml";
+import { t } from "../i18n/locale";
 import { formatLocationSummary, hasDeliveryLocation } from "../location/location";
+import { escapeHtml } from "./cartHtml";
 
 export function renderHeaderActionsBar(
   cart: CartStore,
@@ -23,7 +24,7 @@ export function renderHeaderActionsBar(
             type="button"
             class="header-location"
             data-action="toggle-location"
-            aria-label="${locationPanelOpen ? "Close delivery location" : "Set delivery location"}"
+            aria-label="${locationPanelOpen ? t("headerCloseLocation") : t("headerOpenLocation")}"
             aria-expanded="${locationPanelOpen}"
             data-testid="location-toggle"
           >
@@ -38,7 +39,7 @@ export function renderHeaderActionsBar(
             <span class="header-location__badge ${located ? "header-location__badge--visible" : ""}" data-testid="location-set-indicator" aria-hidden="${!located}"></span>
           </button>
           </div>
-          <button type="button" class="header-cart" data-action="toggle-cart" aria-label="${drawerOpen ? "Close shopping cart" : "Open shopping cart"}" aria-expanded="${drawerOpen}" data-testid="cart-toggle">
+          <button type="button" class="header-cart" data-action="toggle-cart" aria-label="${drawerOpen ? t("headerCloseCart") : t("headerOpenCart")}" aria-expanded="${drawerOpen}" data-testid="cart-toggle">
             <img
               class="header-cart__icon"
               src="/images/cart-icon-white.svg"

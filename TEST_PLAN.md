@@ -5,6 +5,8 @@
 > **Pre-requisite:** `npm run dev:all` must be running before any suite executes.  
 > **Session isolation:** Each suite (or each test where noted) should start with a fresh browser context (cleared cookies/storage) so the session delivery state is clean.
 
+> **⚠️ Locale-aware tests:** The Dynamic Translation feature (Business Rule §10) changes UI strings and currency formatting as soon as a successful address lookup resolves to a known store. Any test that saves a **Brazilian** delivery location will run in `pt-BR` locale (Portuguese text, BRL prices). Any test that saves a **US** delivery location runs in `en-US` (English, USD). Fresh-session tests — where no location is saved before the assertion — always run in the default `en-US` locale. Affected test cases are marked with **[Locale-aware]** below.
+
 ---
 
 ## Table of Contents
@@ -18,6 +20,7 @@
 7. [Suite 07 — Order Placement & Confirmation](#suite-07--order-placement--confirmation)
 8. [Suite 08 — Navigation & Views](#suite-08--navigation--views)
 9. [Suite 09 — UI Feedback & Panels](#suite-09--ui-feedback--panels)
+10. [Suite 10 — Dynamic Translation](#suite-10--dynamic-translation)
 
 ---
 
@@ -55,10 +58,10 @@
 **Preconditions:** Fresh session.  
 **Steps:**
 1. Navigate to `/`.
-2. Collect all `.product-card__badge` elements (text "Spicy").
+2. Collect all `.product-card__badge` elements.
 3. Assert they belong to exactly: `bt-special`, `pack-tenders-spicy`, `combo-spicy-milkshake`.
 
-**Expected:** Exactly 3 spicy badges, on the correct products.
+**Expected:** Exactly 3 spicy badges on the correct products. Badge text is `"Spicy"` in `en-US` locale (default fresh session) and `"Picante"` in `pt-BR` locale (after a BR location is saved). Assert using a case-insensitive presence check on the badge element rather than a hardcoded English string.
 
 ---
 
@@ -271,8 +274,8 @@
 **Preconditions:** Use Londrina ZIP `86015280`.  
 **Steps:**
 1. Open location panel, select BR, type `86015280`.
-2. Click "Look up address" — wait for fields to populate.
-3. Click "Save location".
+2. Click `[data-testid="location-lookup"]` — wait for fields to populate. *(After a successful BR lookup the button label switches to "Buscar endereço" but the `data-testid` selector remains unchanged.)*
+3. Click `[data-testid="location-save"]`. *(Button label in pt-BR locale: "Salvar localização".)*
 
 **Expected:** `[data-testid="location-summary"]` is visible in the header with city/ZIP info.
 
@@ -284,23 +287,23 @@
 
 ---
 
-### TC-04-01 — Londrina BR ZIP resolves to Burguer-Tenders Higienopolis
+### TC-04-01 — Londrina BR ZIP resolves to Burguer-Tenders Higienopolis **[Locale-aware]**
 
 **ZIP:** `86015280` | **Country:** BR  
 **Steps:**
-1. Open location panel, set country to BR, type ZIP, click "Look up address".
+1. Open location panel, set country to BR, type ZIP, click `[data-testid="location-lookup"]`.
 2. Wait for `[data-testid="location-store-status"]` to update.
 
-**Expected:** Status text contains "Burguer-Tenders Higienopolis".
+**Expected:** Status text contains `"Burguer-Tenders Higienopolis"`. Because a BR store is resolved, the locale switches to `pt-BR` immediately — the full status sentence will be `"Entrega disponível por Burguer-Tenders Higienopolis"`. Assert by checking that the store name is contained in the element text (not the full English sentence).
 
 ---
 
-### TC-04-02 — São Paulo BR ZIP resolves to Burguer-Tenders Pinheiros
+### TC-04-02 — São Paulo BR ZIP resolves to Burguer-Tenders Pinheiros **[Locale-aware]**
 
 **ZIP:** `05413010` | **Country:** BR  
 **Steps:** Same as TC-04-01.
 
-**Expected:** Status text contains "Burguer-Tenders Pinheiros".
+**Expected:** Status text contains `"Burguer-Tenders Pinheiros"`. Full sentence after locale switch: `"Entrega disponível por Burguer-Tenders Pinheiros"`. Assert by store name containment only.
 
 ---
 
@@ -315,10 +318,10 @@
 
 ### TC-04-04 — Unknown city ZIP shows "We don't deliver to this city yet"
 
-**ZIP:** A valid Brazilian ZIP outside Londrina/SP (e.g. `01310100` — São Paulo central would match, so use a city not in the list such as Curitiba `80010010`).  
+**ZIP:** A valid Brazilian ZIP outside Londrina/SP (e.g. Curitiba `80010010`).  
 **Steps:** Look up a ZIP for an unsupported city.
 
-**Expected:** Status text contains "We don't deliver to this city yet".
+**Expected:** Status text contains `"We don't deliver to this city yet"`. Because no store is resolved, the locale does **not** change — the message stays in English regardless of the selected country.
 
 ---
 
@@ -337,10 +340,10 @@
 
 **Steps:**
 1. Open location panel, type a valid ZIP.
-2. Click "Look up address".
-3. Immediately assert `[data-testid="location-lookup"]` is disabled and contains "Looking up…".
+2. Click `[data-testid="location-lookup"]`.
+3. Immediately assert the button is `disabled` and shows the loading spinner (`.location-lookup-btn__spinner`). The visible label (`<span class="sr-only">`) reads `"Looking up…"` in `en-US` or `"Buscando…"` in `pt-BR`; assert using the `disabled` attribute and spinner presence rather than the label text.
 
-**Expected:** Button is disabled during the request.
+**Expected:** Button is disabled and the spinner is visible during the request.
 
 ---
 
@@ -384,13 +387,17 @@
 
 ---
 
-### TC-05-02 — After saving location, the pending product is added automatically
+### TC-05-02 — After saving location, the pending product is added automatically **[Locale-aware]**
 
 **Steps:**
 1. Fresh session. Click "Add to cart" on Cheeseburguer (location panel opens).
 2. Set and save a valid location.
 
-**Expected:** Cart badge shows **1**; toast shows "Cheeseburguer was successfully added to cart!".
+**Expected:** Cart badge shows **1**. Toast message depends on the saved country:
+- **US location:** `"Cheeseburguer was successfully added to cart!"`
+- **BR location:** `"Cheeseburguer foi adicionado ao carrinho com sucesso!"`
+
+Assert that `[data-testid="cart-toast"]` is visible and contains `"Cheeseburguer"` (locale-agnostic product name check).
 
 ---
 
@@ -442,15 +449,20 @@
 
 ---
 
-### TC-05-07 — Decrementing to zero removes the line
+### TC-05-07 — Decrementing to zero removes the line **[Locale-aware]**
 
 **Preconditions:** Location saved; Cheeseburguer in cart with quantity 1.  
 **Steps:**
 1. Open cart.
 2. Click `[data-action="dec-line"]`.
 3. Assert the Cheeseburguer line is gone.
+4. Assert the empty-cart message is visible.
 
-**Expected:** Cart shows "Your cart is empty."
+**Expected:** The Cheeseburguer line is removed. The empty-cart message reads:
+- **US locale:** `"Your cart is empty."`
+- **BR locale:** `"Seu carrinho está vazio."`
+
+Assert using `.cart-drawer__empty` visibility rather than hardcoded text when the save country is BR.
 
 ---
 
@@ -466,15 +478,17 @@
 
 ---
 
-### TC-05-09 — Subtotal is calculated correctly
+### TC-05-09 — Subtotal is calculated correctly **[Locale-aware]**
 
-**Preconditions:** Location saved.  
+**Preconditions:** Location saved. **Use a US location (`10001`) to run this test with USD pricing**, or read the expected value from a product card to stay locale-agnostic.  
 **Steps:**
-1. Add 2× Cheeseburguer ($3.49) and 1× Pack of tenders ($6.99).
+1. Add 2× Cheeseburguer and 1× Pack of tenders.
 2. Open cart.
-3. Read `[data-testid="cart-subtotal"]`.
+3. Read `[data-testid="cart-subtotal"]` and `[data-testid="line-total"]` for each line.
 
-**Expected:** Subtotal = `$13.97`.
+**Expected (US locale):** Subtotal = `$13.97` (2 × $3.49 + 1 × $6.99).  
+**Expected (BR locale):** Subtotal = `R$\u00a079,63` (13.97 × 5.7, formatted as pt-BR BRL). The currency symbol is `R$` and the decimal separator is a comma.  
+**Locale-agnostic alternative:** Assert that the subtotal value equals the sum of all individual `[data-testid="line-total"]` values — this holds regardless of currency format.
 
 ---
 
@@ -701,17 +715,25 @@
 
 ---
 
-### TC-07-02 — Confirmation shows personalised greeting
+### TC-07-02 — Confirmation shows personalised greeting **[Locale-aware]**
 
 **Steps:** After placing order with name `"Alice"`.
 
-**Expected:** Page contains "Thank you, Alice!".
+**Expected:** Page contains the personalised greeting:
+- **US locale:** `"Thank you, Alice!"`
+- **BR locale:** `"Obrigado(a), Alice!"`
+
+The user name (`Alice`) is always rendered as entered regardless of locale. Assert that `[data-testid="confirm-title"]` contains `"Alice"` as a locale-agnostic check, or specify the country used to set up preconditions and assert the full localised string.
 
 ---
 
-### TC-07-03 — Confirmation shows "Your order is placed!"
+### TC-07-03 — Confirmation shows order-placed subtitle **[Locale-aware]**
 
-**Expected:** Page contains the text "Your order is placed!".
+**Expected:** Page contains the order-placed subtitle:
+- **US locale:** `"Your order is placed!"`
+- **BR locale:** `"Seu pedido foi realizado!"`
+
+Assert using `[data-testid="confirmation-page"]` scoped text and the expected string for the locale used in the test preconditions.
 
 ---
 
@@ -733,17 +755,21 @@
 
 ---
 
-### TC-07-07 — Cart is empty after order placement
+### TC-07-07 — Cart is empty after order placement **[Locale-aware]**
 
-**Steps:** After confirmation, click "Back to menu", open cart drawer.
+**Steps:** After confirmation, click `[data-testid="confirm-back"]` *(label: "Back to menu" in en-US, "Voltar ao menu" in pt-BR)*, then open the cart drawer.
 
-**Expected:** Cart shows "Your cart is empty." and badge is hidden.
+**Expected:** Cart drawer shows the empty-cart message and the badge is hidden:
+- **US locale:** `"Your cart is empty."`
+- **BR locale:** `"Seu carrinho está vazio."`
+
+Assert using `.cart-drawer__empty` visibility plus badge class absence.
 
 ---
 
-### TC-07-08 — "Back to menu" on confirmation returns to the shop view
+### TC-07-08 — "Back to menu" / "Voltar ao menu" on confirmation returns to the shop view **[Locale-aware]**
 
-**Steps:** Click the "Back to menu" button on the confirmation page.
+**Steps:** Click `[data-testid="confirm-back"]` on the confirmation page. *(Button label: "Back to menu" in en-US; "Voltar ao menu" in pt-BR. Use the `data-testid` selector to stay locale-agnostic.)*
 
 **Expected:** Product grid is visible; view is `shop`.
 
@@ -839,15 +865,17 @@
 
 ---
 
-### TC-09-01 — Add-to-cart toast appears with correct message
+### TC-09-01 — Add-to-cart toast appears with correct message **[Locale-aware]**
 
 **Preconditions:** Location saved.  
 **Steps:**
-1. Click "Add to cart" on Cheeseburguer.
+1. Click `[data-testid="add-to-cart"]` on Cheeseburguer.
 2. Assert `[data-testid="cart-toast"]` is visible.
-3. Assert its text contains `"Cheeseburguer was successfully added to cart!"`.
+3. Assert the toast text matches the active locale:
+   - **US locale:** `"Cheeseburguer was successfully added to cart!"`
+   - **BR locale:** `"Cheeseburguer foi adicionado ao carrinho com sucesso!"`
 
-**Expected:** Toast visible with correct item name.
+**Expected:** Toast is visible and contains the product name `"Cheeseburguer"` followed by locale-appropriate text. To test both variants, run this TC once with a US location and once with a BR location.
 
 ---
 
@@ -873,15 +901,15 @@
 
 ---
 
-### TC-09-04 — Store banner appears after a valid location is saved
+### TC-09-04 — Store banner appears after a valid location is saved **[Locale-aware]**
 
 **Preconditions:** Fresh session.  
 **Steps:**
-1. Save a valid location (e.g. SP ZIP).
+1. Save a valid location (e.g. SP ZIP `05413010` — BR).
 2. Assert `[data-testid="menu-store-banner"]` is visible.
-3. Assert it contains "Burguer-Tenders Pinheiros".
+3. Assert it contains `"Burguer-Tenders Pinheiros"` (store names are never translated).
 
-**Expected:** Banner shows correct store name.
+**Expected:** Banner is visible and contains the store name. After saving a BR location the banner prefix reads `"Pedindo de"` (pt-BR) instead of `"Ordering from"` — assert only on the store name, not the prefix text, to remain locale-agnostic.
 
 ---
 
@@ -962,6 +990,189 @@
 
 ---
 
+## Suite 10 — Dynamic Translation
+
+> **Goal:** Verify that the UI switches language and currency when a successful address lookup resolves to a known store, stays in the default locale when no store is found, and restores the correct locale on session reload.  
+> **Base data:** Use ZIPs from the Appendix. All fresh-session tests start in `en-US`.
+
+---
+
+### TC-10-01 — BR lookup switches UI to Portuguese
+
+**Preconditions:** Fresh session.  
+**Steps:**
+1. Navigate to `/`.
+2. Open the location panel, select `BR`, enter ZIP `86015280`, click `[data-testid="location-lookup"]`.
+3. Wait for `[data-testid="location-store-status"]` to show the store name.
+4. Assert the menu heading `[data-testid]` or `h2.menu__heading` (visible after closing the panel).
+
+**Expected:** Menu heading reads `"Disponível para compra"` (Portuguese). The full re-render triggered by the locale switch applies to the entire page.
+
+---
+
+### TC-10-02 — US lookup keeps UI in English
+
+**Preconditions:** Fresh session.  
+**Steps:**
+1. Navigate to `/`.
+2. Open the location panel, select `US`, enter ZIP `10001`, click `[data-testid="location-lookup"]`.
+3. Wait for `[data-testid="location-store-status"]` to show the store name.
+4. Close the panel and read the menu heading.
+
+**Expected:** Menu heading reads `"Available to buy"` (English unchanged).
+
+---
+
+### TC-10-03 — Prices display in BRL after BR store is resolved
+
+**Preconditions:** Fresh session.  
+**Steps:**
+1. Open the location panel, look up a BR ZIP (`05413010`), wait for store resolution.
+2. Close the panel.
+3. Read all `.product-card__price` text values on the product grid.
+
+**Expected:** Every price matches the BRL format — begins with `R$` and uses a comma as the decimal separator (e.g. `R$\u00a019,89`). No price starts with `$`.
+
+---
+
+### TC-10-04 — Prices remain in USD after US store is resolved
+
+**Preconditions:** Fresh session.  
+**Steps:**
+1. Open the location panel, look up a US ZIP (`10001`), wait for store resolution.
+2. Close the panel.
+3. Read all `.product-card__price` text values.
+
+**Expected:** Every price matches `/^\$\d+\.\d{2}$/`. No price uses `R$` or comma decimal.
+
+---
+
+### TC-10-05 — Locale does NOT change when lookup resolves to no store
+
+**Preconditions:** Fresh session.  
+**Steps:**
+1. Open the location panel, select `BR`, enter Curitiba ZIP `80010010`, click `[data-testid="location-lookup"]`.
+2. Wait for `[data-testid="location-store-status"]` to update.
+3. Close the panel and read the menu heading.
+
+**Expected:** `[data-testid="location-store-status"]` contains `"We don't deliver to this city yet"` (English — locale unchanged). Menu heading is still `"Available to buy"`.
+
+---
+
+### TC-10-06 — Category filter labels are translated in BR locale
+
+**Preconditions:** BR location resolved (lookup with ZIP `05413010`).  
+**Steps:**
+1. Close the location panel and inspect `[data-testid="menu-category-filter"]` option elements.
+
+**Expected:** Options read `"Tudo"`, `"Hambúrgueres"`, `"Tenders"`, `"Combos"`, `"Bebidas"`, `"Acompanhamentos"` — not the English equivalents.
+
+---
+
+### TC-10-07 — Spicy badge reads "Picante" in BR locale
+
+**Preconditions:** BR location resolved.  
+**Steps:**
+1. Close the location panel.
+2. Read the text of `.product-card__badge` on any spicy product (e.g. `[data-product-id="bt-special"]`).
+
+**Expected:** Badge text is `"Picante"`.
+
+---
+
+### TC-10-08 — Cart drawer strings are translated in BR locale
+
+**Preconditions:** BR location resolved; at least one item in cart.  
+**Steps:**
+1. Open the cart drawer.
+2. Assert the drawer title (`h2.cart-drawer__title`).
+3. Assert the "Go to checkout" button text (`[data-testid="go-checkout"]`).
+
+**Expected:**
+- Drawer title: `"Carrinho"`
+- Checkout button: `"Ir para o pagamento"`
+
+---
+
+### TC-10-09 — Empty cart message is translated in BR locale
+
+**Preconditions:** BR location resolved; empty cart.  
+**Steps:**
+1. Open the cart drawer.
+2. Read the empty-state paragraph (`.cart-drawer__empty`).
+
+**Expected:** Text is `"Seu carrinho está vazio."`.
+
+---
+
+### TC-10-10 — Add-to-cart toast is in Portuguese after BR store resolved
+
+**Preconditions:** BR location resolved.  
+**Steps:**
+1. Click `[data-testid="add-to-cart"]` on Cheeseburguer.
+2. Assert `[data-testid="cart-toast"]` text.
+
+**Expected:** Toast reads `"Cheeseburguer foi adicionado ao carrinho com sucesso!"`.
+
+---
+
+### TC-10-11 — Checkout page labels are in Portuguese when BR location is active
+
+**Preconditions:** BR location saved and synced; item in cart; user navigated to checkout.  
+**Steps:**
+1. Assert the checkout page title.
+2. Assert the "Place order" submit button text.
+3. Assert the "Back to menu" back-link text.
+
+**Expected:**
+- Page title: `"Finalizar pedido"`
+- Submit button (`[data-testid="place-order"]`): `"Fazer pedido"`
+- Back link (`[data-testid="back-to-shop"]`): `"← Voltar ao menu"`
+
+---
+
+### TC-10-12 — Confirmation page is in Portuguese when BR location is active
+
+**Preconditions:** BR location saved; order placed with name `"Alice"`.  
+**Steps:**
+1. Assert `[data-testid="confirm-title"]` text.
+2. Assert the subtitle below the check circle.
+3. Assert the ETA line inside `[data-testid="confirm-eta"]`.
+4. Assert the "Back to menu" button (`[data-testid="confirm-back"]`).
+
+**Expected:**
+- Title: `"Obrigado(a), Alice!"`
+- Subtitle: `"Seu pedido foi realizado!"`
+- ETA: contains `"Entrega estimada:"` and `"30 min"`
+- Back button: `"Voltar ao menu"`
+
+---
+
+### TC-10-13 — Session restore applies the saved locale on page reload
+
+**Preconditions:** BR location saved and confirmed (panel closed, banner visible).  
+**Steps:**
+1. Reload the page (`page.reload()`).
+2. Wait for the app to hydrate (banner is visible again).
+3. Read the menu heading and a product price.
+
+**Expected:** On first paint after hydration the menu heading is `"Disponível para compra"` and prices are in BRL format — the locale was restored from the saved `countryCode` in the session before the first render.
+
+---
+
+### TC-10-14 — Switching from BR to US location reverts to English and USD
+
+**Preconditions:** BR location already resolved and active (pt-BR locale).  
+**Steps:**
+1. Open the location panel.
+2. Change country to `US`, enter ZIP `10001`, click `[data-testid="location-lookup"]`.
+3. Wait for `[data-testid="location-store-status"]` to show `"Burguer-Tenders Midtown"`.
+4. Close the panel and read the menu heading and a product price.
+
+**Expected:** Menu heading reverts to `"Available to buy"` and prices are in USD format (`$X.XX`). The locale switched back to `en-US` on the US store resolution.
+
+---
+
 ## Appendix — Test ZIPs Reference
 
 | Country | ZIP | Expected city | Expected store |
@@ -982,4 +1193,4 @@
 
 ---
 
-*Test plan version: April 2026 — covers all business rules in `BUSINESS_RULES.md`.*
+*Test plan version: April 2026 — covers all business rules in `BUSINESS_RULES.md`, including §10 Dynamic Translation.*

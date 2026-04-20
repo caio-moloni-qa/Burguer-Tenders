@@ -26,10 +26,14 @@ test.describe("Suite 01 — Product Catalog", () => {
   });
 
   test("TC-01-03 — Spicy badge appears only on spicy products", async ({ page }) => {
+    // Fresh session → en-US locale → badge reads "Spicy".
+    // After a BR lookup the badge reads "Picante" (pt-BR).
+    // We assert presence of the badge element; the text check uses a
+    // locale-agnostic regex so the test stays green in both locales.
     for (const id of SPICY_IDS) {
       const badge = page.locator(`[data-product-id="${id}"] .product-card__badge`);
       await expect(badge).toBeVisible();
-      await expect(badge).toHaveText(/spicy/i);
+      await expect(badge).toHaveText(/spicy|picante/i);
     }
   });
 

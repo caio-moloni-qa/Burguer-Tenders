@@ -15,6 +15,7 @@
 7. [Navigation & Views](#7-navigation--views)
 8. [Address Geocoding](#8-address-geocoding)
 9. [UI Feedback Rules](#9-ui-feedback-rules)
+10. [Dynamic Translation](#10-dynamic-translation)
 
 ---
 
@@ -605,6 +606,117 @@ If no products exist in the selected category, the product grid shows a centered
 ```html
 <p class="menu__empty">No items in this category yet.</p>
 ```
+
+---
+
+## 10. Dynamic Translation
+
+### 10.1 Overview
+When a user looks up an address and the result resolves to a known store, the entire UI switches language and currency to match the store's country. There are two supported locales:
+
+| Country | Locale | Currency |
+|---|---|---|
+| United States (`US`) | `en-US` (English) | USD (`$`) |
+| Brazil (`BR`) | `pt-BR` (Portuguese) | BRL (`R$`) |
+
+The locale module lives in `src/i18n/locale.ts` and is the single source of truth for all translatable strings and price formatting.
+
+### 10.2 Trigger: "Look up address" button
+Translation is triggered automatically after the "Look up address" button is clicked and the geocoding response resolves to a city served by a known store.
+
+```ts
+// src/main.ts — runPostalLookup (success path)
+syncResolvedStoreFromAddress();
+lookupLoadingEnd();
+
+// If a store was resolved, apply the locale and do a full re-render.
+if (locationDelivery.storeId) {
+  setLocale(locationDelivery.countryCode);
+  emitLocationChange();   // triggers render() across the whole UI
+  return;
+}
+```
+
+If the looked-up city does not match any store, the locale is **not** changed and the standard `patchLookupDOM` path runs as usual.
+
+### 10.3 Session restore
+When the page loads and a previously saved delivery is hydrated from the session cookie, the locale is restored before the first render so the UI appears in the correct language immediately on reload.
+
+```ts
+// src/main.ts — fetchDelivery bootstrap
+if (d.countryCode) {
+  setLocale(d.countryCode);
+}
+render();
+```
+
+### 10.4 Scope of translation
+Every user-visible string in the application is routed through `t(key)`. The following areas are translated:
+
+| Area | Examples |
+|---|---|
+| Menu page | "Available to buy" → "Disponível para compra", category filter options, "Add to cart" → "Adicionar ao carrinho", "Spicy" → "Picante" |
+| Cart drawer | "Cart" → "Carrinho", "Your cart is empty." → "Seu carrinho está vazio.", "Go to checkout" → "Ir para o pagamento" |
+| Checkout page | All field labels, fieldset legends, payment options, "Place order" → "Fazer pedido" |
+| Confirmation page | "Thank you, {name}!" → "Obrigado(a), {name}!", "Your order is placed!" → "Seu pedido foi realizado!", "Back to menu" → "Voltar ao menu" |
+| Location panel | All labels, status messages, button text ("Look up address" → "Buscar endereço", "Save location" → "Salvar localização") |
+| Add-to-cart toast | "{item} was successfully added to cart!" → "{item} foi adicionado ao carrinho com sucesso!" |
+| Header | ARIA labels for the location and cart icon buttons |
+
+### 10.5 Currency formatting
+Prices are stored as `priceUsd` (USD). The `formatPrice(usd)` function in `src/i18n/locale.ts` replaces the original static formatter from `cartHtml.ts`:
+
+```ts
+// src/i18n/locale.ts
+const USD_TO_BRL = 5.7;
+
+export function formatPrice(usd: number): string {
+  if (activeLocale === "pt-BR") {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(usd * USD_TO_BRL);
+  }
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(usd);
+}
+```
+
+- For **US**: price is shown in USD, e.g. `$3.49`.
+- For **BR**: price is converted using a fixed rate (`× 5.7`) and displayed in BRL format, e.g. `R$\u00a019,89`. This is a training-demo value and is not a live exchange rate.
+
+The same `formatPrice` is used in every context where a price appears: product cards, cart lines, cart subtotal, checkout order summary, and checkout subtotal.
+
+### 10.6 Translation API
+```ts
+// src/i18n/locale.ts
+
+export type Locale = "en-US" | "pt-BR";
+
+export function setLocale(countryCode: string): void { … }
+export function getLocale(): Locale { … }
+
+/**
+ * Returns the translated string for `key` in the active locale.
+ * `vars` replaces {placeholder} tokens, e.g. t("confirmTitle", { name: "Alice" }).
+ */
+export function t(key: TranslationKey, vars?: Record<string, string>): string { … }
+export function formatPrice(usd: number): string { … }
+```
+
+String keys with dynamic content use `{placeholder}` tokens:
+
+| Key | EN value | PT value |
+|---|---|---|
+| `confirmTitle` | `"Thank you, {name}!"` | `"Obrigado(a), {name}!"` |
+| `confirmEta` | `"Estimated delivery: {time}"` | `"Entrega estimada: {time}"` |
+| `locationStoreAvailable` | `"Delivery available from {store}"` | `"Entrega disponível por {store}"` |
+| `toastAddedToCart` | `"{item} was successfully added to cart!"` | `"{item} foi adicionado ao carrinho com sucesso!"` |
+
+### 10.7 No re-render while typing
+The locale switch happens exclusively on a completed address lookup, not on every keystroke or country-select change. When switching countries in the location panel, only the stores list and store-status paragraph are patched in-place (`patchLocationCountryDOM`) — the locale itself does not change until a lookup resolves to a known store.
 
 ---
 

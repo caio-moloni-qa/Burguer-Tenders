@@ -1,4 +1,5 @@
 import { getStoreDisplayName } from "../data/stores";
+import { t } from "../i18n/locale";
 import { locationDelivery } from "../location/location";
 import { escapeHtml } from "./cartHtml";
 import { renderHeaderBrand } from "./headerBrandHtml";
@@ -39,9 +40,9 @@ export function renderConfirmationView(
         </div>
 
         <h1 class="confirm-card__title" data-testid="confirm-title">
-          Thank you, ${escapeHtml(userName)}!
+          ${t("confirmTitle", { name: escapeHtml(userName) })}
         </h1>
-        <p class="confirm-card__subtitle">Your order is placed!</p>
+        <p class="confirm-card__subtitle">${t("confirmSubtitle")}</p>
 
         <div class="confirm-card__eta" data-testid="confirm-eta">
           <img
@@ -51,18 +52,18 @@ export function renderConfirmationView(
             height="28"
             class="confirm-card__eta-icon"
           />
-          <span>Estimated delivery: <strong>30 min</strong></span>
+          <span>${t("confirmEta", { time: "30 min" })}</span>
         </div>
 
         <div class="confirm-address" data-testid="confirm-address">
-          <h2 class="confirm-address__heading">Delivery address</h2>
+          <h2 class="confirm-address__heading">${t("confirmDeliveryAddress")}</h2>
           ${storeName ? `<p class="confirm-address__store">${escapeHtml(storeName)}</p>` : ""}
-          ${roRow("ZIP / Postal code",  d.zipCode)}
-          ${roRow("Street address",     d.streetLine)}
-          ${roRow("Neighborhood",       d.neighborhood)}
-          ${roRow("City / State",       cityState)}
-          ${roRow("Country",            d.country)}
-          ${roRow("Complement",         d.complement)}
+          ${roRow(t("checkoutZip"),          d.zipCode)}
+          ${roRow(t("checkoutStreet"),       d.streetLine)}
+          ${roRow(t("checkoutNeighborhood"), d.neighborhood)}
+          ${roRow(t("checkoutCityState"),    cityState)}
+          ${roRow(t("checkoutCountry"),      d.country)}
+          ${roRow(t("checkoutComplement"),   d.complement)}
         </div>
 
         <button
@@ -71,7 +72,7 @@ export function renderConfirmationView(
           data-action="go-home"
           data-testid="confirm-back"
         >
-          Back to menu
+          ${t("confirmBackToMenu")}
         </button>
 
       </div>

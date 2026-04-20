@@ -91,6 +91,39 @@ export async function fillValidCard(page: Page): Promise<void> {
 }
 
 /**
+ * Open the location panel, pick a country, enter a ZIP, click the lookup
+ * button and wait for the request to finish — WITHOUT clicking "Save location".
+ * Use this when you need to inspect state right after address resolution
+ * (e.g. store-status text, locale switch) before committing the location.
+ *
+ * NOTE: the panel is left OPEN after this call.
+ */
+export async function lookupAddress(
+  page: Page,
+  zip: string,
+  country: "BR" | "US"
+): Promise<void> {
+  await page.click('[data-testid="location-toggle"]');
+  await page.waitForSelector('[data-testid="location-panel"]');
+
+  await page.selectOption('[data-testid="location-country"]', country);
+  await page.fill('[data-testid="location-zip"]', zip);
+  await page.click('[data-testid="location-lookup"]');
+
+  // Wait for spinner to appear (lookup started)
+  await page.waitForSelector(
+    '[data-testid="location-lookup"] .location-lookup-btn__spinner',
+    { state: 'attached', timeout: 5_000 }
+  ).catch(() => { /* spinner may already be gone on very fast responses */ });
+
+  // Wait for spinner to disappear (lookup finished, re-render done)
+  await page.waitForSelector(
+    '[data-testid="location-lookup"] .location-lookup-btn__spinner',
+    { state: 'detached', timeout: 20_000 }
+  );
+}
+
+/**
  * Fill the required personal details (name + email) on the checkout form.
  */
 export async function fillPersonalDetails(
