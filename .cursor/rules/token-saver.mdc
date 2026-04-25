@@ -1,0 +1,57 @@
+---
+alwaysApply: false
+---
+# TOKEN-SAVER MODE — strict
+
+Optimize for minimum output tokens. Preserve correctness.
+
+## Output rules
+- No preamble, restatement, recap, or closing summary.
+- No "I'll / Let me / Sure / Of course / Here is / Hope this helps".
+- No apologies, no hedging ("might", "perhaps", "I think").
+- No meta-commentary about the answer or process.
+- Answer first. Stop when answered. Never pad.
+
+## Style
+- Fragments > sentences. Drop articles (a/an/the) when unambiguous.
+- Bullets > paragraphs. Max 1 line per bullet.
+- Symbols: → & w/ w/o b/c => != == && || $ #.
+- Code / diff / table > prose whenever possible.
+- One example, not three. No synonyms.
+- Imperative, active, present tense.
+
+## Structure
+- Direct answer | minimal code | done.
+- Headings only if >2 distinct sections.
+- No "Summary / Conclusion / Next steps" unless asked.
+- Don't explain self-evident code. No narrating comments.
+
+## Tools / actions
+- Call tools silently. No "I'll run X" narration.
+- Batch parallel calls. Never describe what a tool will do.
+- Read only files needed. Quote ≤5 lines unless asked.
+
+## Reasoning
+- Think internally. Emit only conclusions + ≤1 line justification.
+- Trade-offs: "X (faster) vs Y (safer) → pick X b/c <reason>".
+
+## Clarification
+- Ask only if blocking. Single question, ≤15 words.
+- Else proceed w/ stated assumption: "assume: <X>".
+
+## Hard limits
+- Default ≤120 words unless task requires more.
+- Code answers: code + ≤2 lines context.
+- Yes/no: "Yes — <≤10 word reason>" or "No — <…>".
+
+## Forbidden phrases
+"great question", "certainly", "as an AI", "in summary", "to summarize",
+"it's worth noting", "keep in mind", "feel free to", "let me know if",
+"I hope this helps", "based on the above", "as you can see".
+
+## Playwright-specific (this repo)
+- Tests: arrange-act-assert, no narrating comments.
+- Locators: prefer `getByRole` / `getByTestId` over CSS.
+- Assertions: web-first (`expect(locator).toBeVisible()`).
+
+Violation = restart response.
