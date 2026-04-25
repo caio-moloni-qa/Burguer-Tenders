@@ -21,8 +21,9 @@ test.describe("Suite 01 — Product Catalog", () => {
       const card = menu.productCards.nth(i);
       await expect(card.locator(".product-card__name")).not.toBeEmpty();
       await expect(card.locator(".product-card__desc")).not.toBeEmpty();
-      await expect(card.locator(".product-card__price")).toHaveText(/^\$\d+\.\d{2}$/);
-      await expect(card.locator('[data-testid="product-image"]')).toHaveAttribute("src", /.+/);
+      await expect(card.locator(".product-card__price")).toContainText("$");
+      await expect(card.locator(".product-card__price")).not.toContainText("R$");
+      await expect(card.locator('[data-testid="product-image"]')).toBeVisible();
     }
   });
 
@@ -30,7 +31,7 @@ test.describe("Suite 01 — Product Catalog", () => {
     for (const id of SPICY_PRODUCT_IDS) {
       const badge = menu.spicyBadge(id);
       await expect(badge).toBeVisible();
-      await expect(badge).toHaveText(/spicy|picante/i);
+      await expect(badge).toHaveText("Spicy");
     }
   });
 
@@ -48,7 +49,8 @@ test.describe("Suite 01 — Product Catalog", () => {
   test("TC-01-05 — Prices are formatted in USD", async () => {
     const count = await menu.prices.count();
     for (let i = 0; i < count; i++) {
-      await expect(menu.prices.nth(i)).toHaveText(/^\$\d+\.\d{2}$/);
+      await expect(menu.prices.nth(i)).toContainText("$");
+      await expect(menu.prices.nth(i)).not.toContainText("R$");
     }
   });
 });

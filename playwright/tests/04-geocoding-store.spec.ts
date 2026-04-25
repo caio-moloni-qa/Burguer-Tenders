@@ -30,7 +30,7 @@ test.describe("Suite 04 — Address Geocoding & Store Resolution", () => {
   test("TC-04-04 — Unknown city ZIP shows no-delivery message", async () => {
     await location.lookupAddress(ZIPS.curitiba.zip, "BR");
     await expect(location.storeStatus)
-      .toContainText(/don't deliver to this city yet|não entregamos nesta cidade/i);
+      .toContainText("We don't deliver to this city yet");
   });
 
   test("TC-04-05 — Address fields are populated after a successful lookup", async () => {

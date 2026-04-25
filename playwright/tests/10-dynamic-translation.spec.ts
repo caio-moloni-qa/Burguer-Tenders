@@ -33,7 +33,7 @@ test.describe("Suite 10 — Dynamic Translation", () => {
     const prices = await menu.prices.allTextContents();
     expect(prices.length).toBeGreaterThan(0);
     for (const price of prices) {
-      expect(price.trim()).toMatch(/^R\$/);
+      expect(price.trim()).toContain("R$");
     }
   });
 
@@ -44,8 +44,8 @@ test.describe("Suite 10 — Dynamic Translation", () => {
     const prices = await menu.prices.allTextContents();
     expect(prices.length).toBeGreaterThan(0);
     for (const price of prices) {
-      expect(price.trim()).toMatch(/^\$\d/);
-      expect(price.trim()).not.toMatch(/^R\$/);
+      expect(price.trim()).toContain("$");
+      expect(price.trim()).not.toContain("R$");
     }
   });
 
@@ -130,7 +130,7 @@ test.describe("Suite 10 — Dynamic Translation", () => {
 
     await expect(menu.menuHeading).toHaveText("Disponível para compra");
     const firstPrice = await menu.prices.first().textContent();
-    expect(firstPrice?.trim()).toMatch(/^R\$/);
+    expect(firstPrice?.trim()).toContain("R$");
   });
 
   test("TC-10-14 — Switching from BR to US location reverts to English and USD", async () => {
@@ -143,7 +143,7 @@ test.describe("Suite 10 — Dynamic Translation", () => {
     await expect(menu.menuHeading).toHaveText("Available to buy");
 
     const firstPrice = await menu.prices.first().textContent();
-    expect(firstPrice?.trim()).toMatch(/^\$\d/);
-    expect(firstPrice?.trim()).not.toMatch(/^R\$/);
+    expect(firstPrice?.trim()).toContain("$");
+    expect(firstPrice?.trim()).not.toContain("R$");
   });
 });

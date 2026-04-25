@@ -35,7 +35,7 @@ test.describe("Suite 07 — Order Placement & Confirmation Page", () => {
   test("TC-07-03 — Confirmation page shows order-placed subtitle [Locale-aware]", async ({ page }) => {
     await page.locator('[data-testid="place-order"]').click();
     await expect(confirmation.subtitle)
-      .toContainText(/order is placed|pedido foi realizado/i);
+      .toContainText("pedido foi realizado");
   });
 
   test("TC-07-04 — Confirmation page shows ETA of 30 min [Locale-aware]", async ({ page }) => {
@@ -50,7 +50,7 @@ test.describe("Suite 07 — Order Placement & Confirmation Page", () => {
 
   test("TC-07-06 — Confirmation page shows full delivery address", async ({ page }) => {
     await page.locator('[data-testid="place-order"]').click();
-    await expect(confirmation.address).toContainText(ZIPS.saoPaulo.zip.replace(/\D/g, ""));
+    await expect(confirmation.address).toContainText(ZIPS.saoPaulo.zip);
     await expect(confirmation.address).not.toBeEmpty();
   });
 
