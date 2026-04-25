@@ -360,6 +360,50 @@ button.site-brand--home {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--bt-red) 20%, transparent);
 }
 
+.menu__search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.menu__search-label {
+  font-size: 0.875rem;
+  font-weight: var(--bt-font-medium);
+  color: #555;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.menu__search-input {
+  flex: 1;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--bt-white);
+  border: 1.5px solid color-mix(in srgb, var(--bt-red) 30%, transparent);
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: var(--bt-font-normal);
+  color: var(--bt-text-on-light);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  min-width: 0;
+}
+
+.menu__search-input::placeholder {
+  color: #aaa;
+}
+
+.menu__search-input:hover {
+  border-color: var(--bt-red);
+}
+
+.menu__search-input:focus {
+  outline: none;
+  border-color: var(--bt-red);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bt-red) 20%, transparent);
+}
+
 .menu__empty {
   grid-column: 1 / -1;
   text-align: center;
@@ -1409,6 +1453,260 @@ button.site-brand--home {
   line-height: 1.5;
 }
 
+.checkout-tip {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--bt-red) 12%, transparent);
+}
+
+.checkout-tip__label {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: var(--bt-font-semibold);
+  color: #444;
+}
+
+.checkout-tip__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.checkout-tip__btn {
+  flex: 1 1 auto;
+  padding: 0.4rem 0.75rem;
+  border: 1.5px solid color-mix(in srgb, var(--bt-red) 28%, transparent);
+  border-radius: 8px;
+  background: var(--bt-white);
+  color: var(--bt-text-on-light);
+  font-size: 0.9375rem;
+  font-weight: var(--bt-font-medium);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.checkout-tip__btn:hover {
+  border-color: var(--bt-red);
+  background: color-mix(in srgb, var(--bt-red) 6%, var(--bt-white));
+}
+
+.checkout-tip__btn:focus-visible {
+  outline: 2px solid var(--bt-yellow);
+  outline-offset: 2px;
+}
+
+.checkout-tip__btn--active {
+  border-color: var(--bt-red);
+  background: var(--bt-red);
+  color: var(--bt-text-on-red);
+}
+
+.checkout-tip__btn--active:hover {
+  background: var(--bt-red-hover);
+  border-color: var(--bt-red-hover);
+}
+
+.checkout-summary__tip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: var(--bt-font-normal);
+  font-variant-numeric: tabular-nums;
+  color: #555;
+}
+
+/* ── Donation section ──────────────────────────────── */
+.checkout-donation {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1.5px solid color-mix(in srgb, var(--bt-red) 20%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bt-red) 3%, var(--bt-white));
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.checkout-donation__title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: var(--bt-font-medium);
+  color: #444;
+  line-height: 1.4;
+}
+
+.checkout-donation__title strong {
+  font-weight: var(--bt-font-semibold);
+  color: var(--bt-red-dark);
+}
+
+.checkout-donation__groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.checkout-donation__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.checkout-donation__group-label {
+  font-size: 0.75rem;
+  font-weight: var(--bt-font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #777;
+}
+
+.checkout-donation__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.checkout-donation__btn {
+  padding: 0.35rem 0.65rem;
+  border: 1.5px solid color-mix(in srgb, var(--bt-red) 28%, transparent);
+  border-radius: 8px;
+  background: var(--bt-white);
+  color: var(--bt-text-on-light);
+  font-size: 0.875rem;
+  font-weight: var(--bt-font-medium);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.checkout-donation__btn:hover {
+  border-color: var(--bt-red);
+  background: color-mix(in srgb, var(--bt-red) 6%, var(--bt-white));
+}
+
+.checkout-donation__btn:focus-visible {
+  outline: 2px solid var(--bt-yellow);
+  outline-offset: 2px;
+}
+
+.checkout-donation__btn--active {
+  border-color: var(--bt-red);
+  background: var(--bt-red);
+  color: var(--bt-text-on-red);
+}
+
+.checkout-donation__btn--active:hover {
+  background: var(--bt-red-hover);
+  border-color: var(--bt-red-hover);
+}
+
+.checkout-donation__custom-wrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.checkout-donation__custom-wrap--percent {
+  /* extra right padding reserved for the "%" suffix */
+}
+
+.checkout-donation__custom-input {
+  width: 6rem;
+  padding: 0.35rem 0.5rem;
+  border: 1.5px dashed color-mix(in srgb, var(--bt-red) 28%, transparent);
+  border-radius: 8px;
+  background: var(--bt-white);
+  color: var(--bt-text-on-light);
+  font-size: 0.875rem;
+  font-weight: var(--bt-font-medium);
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  /* hide browser spinners */
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.checkout-donation__custom-input::-webkit-inner-spin-button,
+.checkout-donation__custom-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.checkout-donation__custom-input::placeholder {
+  color: #aaa;
+  font-weight: var(--bt-font-normal);
+}
+
+.checkout-donation__custom-input:hover {
+  border-color: var(--bt-red);
+  border-style: solid;
+}
+
+.checkout-donation__custom-input:focus {
+  outline: none;
+  border-style: solid;
+  border-color: var(--bt-red);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bt-red) 18%, transparent);
+}
+
+.checkout-donation__custom-input--active {
+  border-style: solid;
+  border-color: var(--bt-red);
+  background: color-mix(in srgb, var(--bt-red) 5%, var(--bt-white));
+}
+
+.checkout-donation__custom-suffix {
+  position: absolute;
+  right: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: var(--bt-font-medium);
+  color: #777;
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* When percent custom input is active/focused, push the suffix into view */
+.checkout-donation__custom-wrap--percent .checkout-donation__custom-input {
+  padding-right: 1.4rem;
+}
+
+.checkout-donation__none {
+  align-self: flex-start;
+  padding: 0.3rem 0.65rem;
+  border: 1px dashed #bbb;
+  border-radius: 8px;
+  background: transparent;
+  color: #777;
+  font-size: 0.8125rem;
+  font-weight: var(--bt-font-medium);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.checkout-donation__none:hover {
+  border-color: #888;
+  color: #444;
+  background: color-mix(in srgb, #000 4%, transparent);
+}
+
+.checkout-donation__none:focus-visible {
+  outline: 2px solid var(--bt-yellow);
+  outline-offset: 2px;
+}
+
+.checkout-donation__none--active {
+  border-style: solid;
+  border-color: #888;
+  color: #333;
+  font-weight: var(--bt-font-semibold);
+}
+
 .checkout-summary__total {
   display: flex;
   justify-content: space-between;
@@ -1420,6 +1718,10 @@ button.site-brand--home {
   font-weight: var(--bt-font-bold);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
+}
+
+.checkout-summary__grand-total {
+  color: var(--bt-red-dark);
 }
 
 .checkout-submit {

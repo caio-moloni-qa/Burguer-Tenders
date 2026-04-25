@@ -1,6 +1,12 @@
 import type { CartStore } from "../cart/cartStore";
 import { checkoutValidationErrors } from "../checkout/checkoutErrors";
-import { checkoutForm } from "../checkout/checkoutForm";
+import {
+  checkoutForm,
+  type TipPercent,
+  DONATION_ASSOCIATION,
+  DONATION_FIXED_OPTIONS,
+  DONATION_PERCENT_OPTIONS,
+} from "../checkout/checkoutForm";
 import { getProductById } from "../data/products";
 import { getLocationPanelOpen, locationDelivery } from "../location/location";
 import { getStoreDisplayName } from "../data/stores";
@@ -32,10 +38,18 @@ function errBlock(field: string, id: string): string {
   return `<p id="${id}" class="checkout-field-error" role="alert" data-testid="checkout-error-${field}">${escapeHtml(msg)}</p>`;
 }
 
+const TIP_OPTIONS: TipPercent[] = [0, 10, 15, 20];
+
 export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): void {
   const drawerOpen = cart.isDrawerOpen();
   const subtotal = cartSubtotal(cart);
   const f = checkoutForm;
+  const tipAmount = subtotal * f.tipPercent / 100;
+  const donationAmount =
+    f.donationType === "fixed"   ? f.donationAmount :
+    f.donationType === "percent" ? subtotal * f.donationAmount / 100 :
+    0;
+  const grandTotal = subtotal + tipAmount + donationAmount;
 
   const locationOpen = getLocationPanelOpen();
   document.body.classList.toggle("cart-open", drawerOpen || locationOpen);
@@ -232,9 +246,111 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
             <div class="checkout-summary__lines" data-testid="checkout-summary-lines">
               ${renderOrderSummary(cart)}
             </div>
+            <div class="checkout-tip" data-testid="checkout-tip-selector">
+              <p class="checkout-tip__label">${t("checkoutTip")}</p>
+              <div class="checkout-tip__options" role="group" aria-label="${t("checkoutTip")}">
+                ${TIP_OPTIONS.map((pct) => `
+                  <button
+                    type="button"
+                    class="checkout-tip__btn${f.tipPercent === pct ? " checkout-tip__btn--active" : ""}"
+                    data-action="set-tip"
+                    data-tip-percent="${pct}"
+                    data-testid="tip-option-${pct}"
+                  >${pct === 0 ? t("checkoutTipNone") : `${pct}%`}</button>
+                `).join("")}
+              </div>
+            </div>
+            <div class="checkout-donation" data-testid="checkout-donation">
+              <p class="checkout-donation__title">
+                ${t("checkoutDonation")} <strong>${escapeHtml(DONATION_ASSOCIATION)}</strong>
+              </p>
+              <div class="checkout-donation__groups">
+                <div class="checkout-donation__group">
+                  <span class="checkout-donation__group-label">${t("checkoutDonationFixed")}</span>
+                  <div class="checkout-donation__options" role="group" aria-label="${t("checkoutDonationFixed")}">
+                    ${DONATION_FIXED_OPTIONS.map((amt) => {
+                      const active = f.donationType === "fixed" && f.donationAmount === amt && f.donationCustomFixed === "";
+                      return `<button
+                        type="button"
+                        class="checkout-donation__btn${active ? " checkout-donation__btn--active" : ""}"
+                        data-action="set-donation"
+                        data-donation-type="fixed"
+                        data-donation-amount="${amt}"
+                        data-testid="donation-fixed-${amt}"
+                      >${formatPrice(amt)}</button>`;
+                    }).join("")}
+                    <div class="checkout-donation__custom-wrap">
+                      <input
+                        type="number"
+                        class="checkout-donation__custom-input${f.donationType === "fixed" && f.donationCustomFixed !== "" ? " checkout-donation__custom-input--active" : ""}"
+                        data-donation-custom="fixed"
+                        data-testid="donation-custom-fixed"
+                        placeholder="${t("checkoutDonationCustom")}"
+                        min="0.01"
+                        step="0.01"
+                        value="${escapeHtml(f.donationCustomFixed)}"
+                        aria-label="${t("checkoutDonationFixed")} — ${t("checkoutDonationCustom")}"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="checkout-donation__group">
+                  <span class="checkout-donation__group-label">${t("checkoutDonationPercent")}</span>
+                  <div class="checkout-donation__options" role="group" aria-label="${t("checkoutDonationPercent")}">
+                    ${DONATION_PERCENT_OPTIONS.map((pct) => {
+                      const active = f.donationType === "percent" && f.donationAmount === pct && f.donationCustomPercent === "";
+                      return `<button
+                        type="button"
+                        class="checkout-donation__btn${active ? " checkout-donation__btn--active" : ""}"
+                        data-action="set-donation"
+                        data-donation-type="percent"
+                        data-donation-amount="${pct}"
+                        data-testid="donation-percent-${pct}"
+                      >${pct}%</button>`;
+                    }).join("")}
+                    <div class="checkout-donation__custom-wrap checkout-donation__custom-wrap--percent">
+                      <input
+                        type="number"
+                        class="checkout-donation__custom-input${f.donationType === "percent" && f.donationCustomPercent !== "" ? " checkout-donation__custom-input--active" : ""}"
+                        data-donation-custom="percent"
+                        data-testid="donation-custom-percent"
+                        placeholder="${t("checkoutDonationCustom")}"
+                        min="0.01"
+                        max="100"
+                        step="0.01"
+                        value="${escapeHtml(f.donationCustomPercent)}"
+                        aria-label="${t("checkoutDonationPercent")} — ${t("checkoutDonationCustom")}"
+                      />
+                      <span class="checkout-donation__custom-suffix">%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="checkout-donation__none${f.donationType === "none" ? " checkout-donation__none--active" : ""}"
+                data-action="set-donation"
+                data-donation-type="none"
+                data-testid="donation-none"
+              >${t("checkoutDonationNone")}</button>
+            </div>
             <div class="checkout-summary__total">
               <span>${t("checkoutSubtotal")}</span>
               <strong data-testid="checkout-subtotal">${formatPrice(subtotal)}</strong>
+            </div>
+            ${f.tipPercent > 0 ? `
+            <div class="checkout-summary__tip-row" data-testid="checkout-tip-amount">
+              <span>${t("checkoutTip")} (${f.tipPercent}%)</span>
+              <span>${formatPrice(tipAmount)}</span>
+            </div>` : ""}
+            ${f.donationType !== "none" ? `
+            <div class="checkout-summary__tip-row" data-testid="checkout-donation-amount">
+              <span>${escapeHtml(DONATION_ASSOCIATION)}</span>
+              <span>${formatPrice(donationAmount)}</span>
+            </div>` : ""}
+            <div class="checkout-summary__total checkout-summary__grand-total" data-testid="checkout-total">
+              <span>${t("checkoutTotal")}</span>
+              <strong>${formatPrice(grandTotal)}</strong>
             </div>
           </section>
           <button type="submit" class="checkout-submit" data-testid="place-order">
@@ -258,6 +374,63 @@ export function renderCheckoutView(container: HTMLDivElement, cart: CartStore): 
     </div>
     ${renderLocationLayer(locationOpen)}
   `;
+}
+
+/**
+ * Surgically update the donation-related totals without re-rendering the page.
+ * Called while the user is typing in a custom donation field so the input
+ * element is never destroyed and the cursor stays in place.
+ */
+export function patchDonationSummary(cart: CartStore): void {
+  const f = checkoutForm;
+  const subtotal = cartSubtotal(cart);
+  const tipAmount = subtotal * f.tipPercent / 100;
+  const donationAmt =
+    f.donationType === "fixed"   ? f.donationAmount :
+    f.donationType === "percent" ? subtotal * f.donationAmount / 100 :
+    0;
+  const grandTotal = subtotal + tipAmount + donationAmt;
+
+  // 1. Donation summary row — insert, update, or remove.
+  const grandTotalEl = document.querySelector<HTMLElement>('[data-testid="checkout-total"]');
+  const existingDonRow = document.querySelector<HTMLElement>('[data-testid="checkout-donation-amount"]');
+  if (f.donationType !== "none") {
+    const html = `<div class="checkout-summary__tip-row" data-testid="checkout-donation-amount"><span>${escapeHtml(DONATION_ASSOCIATION)}</span><span>${formatPrice(donationAmt)}</span></div>`;
+    if (existingDonRow) {
+      existingDonRow.outerHTML = html;
+    } else if (grandTotalEl) {
+      grandTotalEl.insertAdjacentHTML("beforebegin", html);
+    }
+  } else {
+    existingDonRow?.remove();
+  }
+
+  // 2. Grand total amount text.
+  const grandTotalStrong = document.querySelector<HTMLElement>('[data-testid="checkout-total"] strong');
+  if (grandTotalStrong) {
+    grandTotalStrong.textContent = formatPrice(grandTotal);
+  }
+
+  // 3. Toggle active class on each custom input.
+  document.querySelector('[data-donation-custom="fixed"]')?.classList.toggle(
+    "checkout-donation__custom-input--active",
+    f.donationType === "fixed" && f.donationCustomFixed !== ""
+  );
+  document.querySelector('[data-donation-custom="percent"]')?.classList.toggle(
+    "checkout-donation__custom-input--active",
+    f.donationType === "percent" && f.donationCustomPercent !== ""
+  );
+
+  // 4. Deactivate preset buttons for whichever group the user is now typing in.
+  document.querySelectorAll<HTMLElement>("[data-action='set-donation'][data-donation-amount]").forEach((btn) => {
+    const type = btn.dataset.donationType as "fixed" | "percent";
+    const amt  = parseInt(btn.dataset.donationAmount ?? "0", 10);
+    const noCustom = type === "fixed" ? f.donationCustomFixed === "" : f.donationCustomPercent === "";
+    btn.classList.toggle(
+      "checkout-donation__btn--active",
+      f.donationType === type && f.donationAmount === amt && noCustom
+    );
+  });
 }
 
 function renderOrderSummary(cart: CartStore): string {

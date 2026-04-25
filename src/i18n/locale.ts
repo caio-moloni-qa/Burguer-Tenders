@@ -24,6 +24,14 @@ export function getLocale(): Locale {
 const USD_TO_BRL = 5.7;
 
 /**
+ * Convert an amount expressed in the active locale's display currency back to USD.
+ * Use this when the user types a value that should be interpreted as local currency.
+ */
+export function fromDisplayPrice(localAmount: number): number {
+  return activeLocale === "pt-BR" ? localAmount / USD_TO_BRL : localAmount;
+}
+
+/**
  * Format a USD price in the active locale's currency.
  * For Brazil, applies a fixed USD→BRL conversion so the amounts feel realistic.
  */
@@ -53,6 +61,8 @@ export type TranslationKey =
   // Menu page
   | "menuHeading"
   | "menuCategoryLabel"
+  | "menuSearchLabel"
+  | "menuSearchPlaceholder"
   | "menuOrderingFrom"
   | "menuAddToCart"
   | "menuAddToCartHint"
@@ -89,6 +99,14 @@ export type TranslationKey =
   | "checkoutOrderSummary"
   | "checkoutNoItems"
   | "checkoutSubtotal"
+  | "checkoutTip"
+  | "checkoutTipNone"
+  | "checkoutTotal"
+  | "checkoutDonation"
+  | "checkoutDonationNone"
+  | "checkoutDonationFixed"
+  | "checkoutDonationPercent"
+  | "checkoutDonationCustom"
   | "checkoutPlaceOrder"
   // Confirmation page
   | "confirmTitle"
@@ -141,9 +159,11 @@ const en: Dictionary = {
   categoryDrink:   "Drinks",
   categorySide:    "Sides",
   // Menu page
-  menuHeading:        "Available to buy",
-  menuCategoryLabel:  "Category",
-  menuOrderingFrom:   "Ordering from",
+  menuHeading:           "Available to buy",
+  menuCategoryLabel:     "Category",
+  menuSearchLabel:       "Search",
+  menuSearchPlaceholder: "Search items\u2026",
+  menuOrderingFrom:      "Ordering from",
   menuAddToCart:      "Add to cart",
   menuAddToCartHint:  "Set your delivery location first",
   menuNoItems:        "No items in this category yet.",
@@ -179,6 +199,14 @@ const en: Dictionary = {
   checkoutOrderSummary:    "Order summary",
   checkoutNoItems:         "No items in cart.",
   checkoutSubtotal:        "Subtotal",
+  checkoutTip:             "Tip",
+  checkoutTipNone:         "No tip",
+  checkoutTotal:           "Total",
+  checkoutDonation:        "Donation to",
+  checkoutDonationNone:    "No donation",
+  checkoutDonationFixed:   "Fixed amount",
+  checkoutDonationPercent: "% of order",
+  checkoutDonationCustom:  "Custom",
   checkoutPlaceOrder:      "Place order",
   // Confirmation page
   confirmTitle:           "Thank you, {name}!",
@@ -228,9 +256,11 @@ const pt: Dictionary = {
   categoryDrink:   "Bebidas",
   categorySide:    "Acompanhamentos",
   // Menu page
-  menuHeading:        "Disponível para compra",
-  menuCategoryLabel:  "Categoria",
-  menuOrderingFrom:   "Pedindo de",
+  menuHeading:           "Disponível para compra",
+  menuCategoryLabel:     "Categoria",
+  menuSearchLabel:       "Buscar",
+  menuSearchPlaceholder: "Buscar itens\u2026",
+  menuOrderingFrom:      "Pedindo de",
   menuAddToCart:      "Adicionar ao carrinho",
   menuAddToCartHint:  "Defina seu endereço de entrega primeiro",
   menuNoItems:        "Nenhum item nesta categoria ainda.",
@@ -266,6 +296,14 @@ const pt: Dictionary = {
   checkoutOrderSummary:    "Resumo do pedido",
   checkoutNoItems:         "Nenhum item no carrinho.",
   checkoutSubtotal:        "Subtotal",
+  checkoutTip:             "Gorjeta",
+  checkoutTipNone:         "Sem gorjeta",
+  checkoutTotal:           "Total",
+  checkoutDonation:        "Doação para",
+  checkoutDonationNone:    "Sem doação",
+  checkoutDonationFixed:   "Valor fixo",
+  checkoutDonationPercent: "% do pedido",
+  checkoutDonationCustom:  "Personalizado",
   checkoutPlaceOrder:      "Fazer pedido",
   // Confirmation page
   confirmTitle:           "Obrigado(a), {name}!",

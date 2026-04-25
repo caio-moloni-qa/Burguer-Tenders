@@ -16,6 +16,9 @@
 8. [Address Geocoding](#8-address-geocoding)
 9. [UI Feedback Rules](#9-ui-feedback-rules)
 10. [Dynamic Translation](#10-dynamic-translation)
+11. [Menu Search](#11-menu-search)
+12. [Tip Option](#12-tip-option)
+13. [Donation](#13-donation)
 
 ---
 
@@ -584,13 +587,14 @@ btn.textContent = opts.loading ? "Looking up…" : "Look up address";
 ```
 
 ### 9.5 No re-render while typing in panels or mutating the cart
-Three separate strategies are used to avoid unnecessary full re-renders:
+Several strategies are used to avoid unnecessary full re-renders:
 
 | Trigger | Strategy |
 |---|---|
 | Typing in the location panel | `clearLookupErrorSilent()` — updates state without `emit()` |
 | Typing in card/checkout fields | Direct `checkoutForm` mutation only, no `emit()` |
 | Adding/removing items in the open cart drawer | Silent cart mutations + `patchCartDOM()` — patches only the 3 affected DOM nodes |
+| Typing in a donation custom field | `patchDonationSummary(cart)` — patches only the totals rows; the `<input>` is never replaced so the cursor stays in place |
 | Country select change in location panel | `emitLocationChange()` — triggers a deliberate re-render |
 | Address lookup completion | `emitLocationChange()` — single clean re-render after all state is updated |
 
@@ -656,8 +660,11 @@ Every user-visible string in the application is routed through `t(key)`. The fol
 | Area | Examples |
 |---|---|
 | Menu page | "Available to buy" → "Disponível para compra", category filter options, "Add to cart" → "Adicionar ao carrinho", "Spicy" → "Picante" |
+| Menu search | "Search" → "Buscar", placeholder "Search items…" → "Buscar itens…" |
 | Cart drawer | "Cart" → "Carrinho", "Your cart is empty." → "Seu carrinho está vazio.", "Go to checkout" → "Ir para o pagamento" |
 | Checkout page | All field labels, fieldset legends, payment options, "Place order" → "Fazer pedido" |
+| Checkout tip | "Tip" → "Gorjeta", "No tip" → "Sem gorjeta", "Total" → "Total" |
+| Checkout donation | "Donation to" → "Doação para", "No donation" → "Sem doação", "Fixed amount" → "Valor fixo", "% of order" → "% do pedido", "Custom" → "Personalizado" |
 | Confirmation page | "Thank you, {name}!" → "Obrigado(a), {name}!", "Your order is placed!" → "Seu pedido foi realizado!", "Back to menu" → "Voltar ao menu" |
 | Location panel | All labels, status messages, button text ("Look up address" → "Buscar endereço", "Save location" → "Salvar localização") |
 | Add-to-cart toast | "{item} was successfully added to cart!" → "{item} foi adicionado ao carrinho com sucesso!" |
@@ -717,6 +724,244 @@ String keys with dynamic content use `{placeholder}` tokens:
 
 ### 10.7 No re-render while typing
 The locale switch happens exclusively on a completed address lookup, not on every keystroke or country-select change. When switching countries in the location panel, only the stores list and store-status paragraph are patched in-place (`patchLocationCountryDOM`) — the locale itself does not change until a lookup resolves to a known store.
+
+---
+
+---
+
+## 11. Menu Search
+
+### 11.1 Search input location
+A text search field is rendered in a dedicated row (`menu__search-row`) directly below the category filter toolbar on the shop / home screen. It is always visible regardless of the active category.
+
+### 11.2 Search scope
+The search matches against `product.name` and `product.description` — case-insensitive and accent-sensitive. Both fields are lowercased before comparison.
+
+```ts
+// src/ui/menu.ts
+const filtered = menuSearchQuery
+  ? categoryFiltered.filter(
+      (p) =>
+        p.name.toLowerCase().includes(menuSearchQuery) ||
+        p.description.toLowerCase().includes(menuSearchQuery)
+    )
+  : categoryFiltered;
+```
+
+### 11.3 Search and category filter compose
+Both filters are applied together: the category filter runs first, then the search query narrows the result. Clearing either restores the products that satisfy the remaining filter.
+
+```ts
+// src/ui/menu.ts
+const categoryFiltered = activeFilter === "all"
+  ? items
+  : items.filter((p) => p.category === activeFilter);
+
+const filtered = menuSearchQuery ? categoryFiltered.filter(…) : categoryFiltered;
+```
+
+### 11.4 State persistence across re-renders
+The active query is stored in a module-level variable `menuSearchQuery` inside `src/ui/menu.ts` and exposed via `setMenuSearch` / `getMenuSearch`. It survives cart updates, location saves, and any other event that triggers `render()`.
+
+### 11.5 Real-time filtering
+The input is bound to the `input` event in `main.ts`. Every keystroke calls `setMenuSearch` and immediately triggers `render()` to update the product grid.
+
+```ts
+// src/main.ts — input listener
+if (target?.matches("[data-menu-search]")) {
+  setMenuSearch((target as HTMLInputElement).value);
+  render();
+  return;
+}
+```
+
+### 11.6 Cursor preservation across re-renders
+Because `render()` replaces the full page `innerHTML`, the search input loses focus and its cursor position on every keystroke. To prevent this, `main.ts` snapshots the caret position before each render and refocuses the input (with caret restored) after, using the generic `getInputFocusSnapshot` / `restoreInputFocus` helpers.
+
+```ts
+// src/main.ts — render()
+const searchCaret = getInputFocusSnapshot("[data-menu-search]");
+// … render …
+if (searchCaret >= 0) {
+  restoreInputFocus("[data-menu-search]", searchCaret);
+}
+```
+
+### 11.7 Empty state
+If no products match the combined category + search filters, the same centered placeholder used by the category filter is shown:
+
+```html
+<p class="menu__empty">No items in this category yet.</p>
+```
+
+---
+
+## 12. Tip Option
+
+### 12.1 Preset tip amounts
+The checkout page includes a tip selector inside the order summary section. Four buttons are presented:
+
+| Label | Value stored |
+|---|---|
+| No tip | `tipPercent = 0` |
+| 10% | `tipPercent = 10` |
+| 15% | `tipPercent = 15` |
+| 20% | `tipPercent = 20` |
+
+The default is **No tip** (`0`).
+
+### 12.2 State storage
+The selected tip is stored as `tipPercent: TipPercent` (type `0 | 10 | 15 | 20`) on the persistent `checkoutForm` object in `src/checkout/checkoutForm.ts`. It survives navigation between views within the same session.
+
+### 12.3 Tip amount calculation
+The tip is a percentage of the **items subtotal** (before any donation):
+
+```ts
+// src/ui/checkoutView.ts
+const tipAmount = subtotal * f.tipPercent / 100;
+```
+
+### 12.4 Order summary display
+The order summary section shows three rows in the totals area:
+
+1. **Subtotal** — items total (always shown; `data-testid="checkout-subtotal"`)
+2. **Tip (X%)** — tip amount; only shown when `tipPercent > 0` (`data-testid="checkout-tip-amount"`)
+3. **Total** — grand total = subtotal + tip + donation (`data-testid="checkout-total"`)
+
+### 12.5 Interaction pattern
+Tip buttons carry `data-action="set-tip"` and `data-tip-percent`. Clicking them is handled directly in the root click listener in `main.ts` (before `handleCartAction`) and triggers a full checkout re-render:
+
+```ts
+// src/main.ts — click listener
+if (action === "set-tip") {
+  const pct = parseInt(el.dataset.tipPercent ?? "0", 10);
+  if ([0, 10, 15, 20].includes(pct)) {
+    checkoutForm.tipPercent = pct as TipPercent;
+    if (getView() === "checkout") render();
+  }
+  return;
+}
+```
+
+---
+
+## 13. Donation
+
+### 13.1 Association
+The beneficiary is always **Associação de doações Teste**. The name is defined as a single constant and used in both the donation selector UI and the order summary line:
+
+```ts
+// src/checkout/checkoutForm.ts
+export const DONATION_ASSOCIATION = "Associação de doações Teste";
+```
+
+### 13.2 Donation modes
+Two independent modes are offered — only one can be active at a time:
+
+| Mode | Description |
+|---|---|
+| **Fixed amount** | A fixed monetary value (in the active display currency) |
+| **Percentage** | A percentage of the items subtotal |
+
+Default state is **No donation** (`donationType = "none"`).
+
+### 13.3 Preset options
+Each mode has three preset quick-select buttons:
+
+| Fixed presets | Percent presets |
+|---|---|
+| $1.00 / R$1,00 | 1% |
+| $2.00 / R$2,00 | 2% |
+| $5.00 / R$5,00 | 5% |
+
+Preset values are defined as constants in `src/checkout/checkoutForm.ts`:
+
+```ts
+export const DONATION_FIXED_OPTIONS  = [1, 2, 5] as const;   // USD
+export const DONATION_PERCENT_OPTIONS = [1, 2, 5] as const;  // percent
+```
+
+Preset fixed amounts are stored internally in USD and displayed through `formatPrice`, so they adapt automatically to the active locale.
+
+### 13.4 Custom value inputs
+Each mode also exposes a `<input type="number">` for a user-defined amount:
+
+- **Fixed custom** — the user types the amount in the **active display currency** (USD or BRL). The value is converted to USD before being stored internally using `fromDisplayPrice()`.
+- **Percent custom** — the user types a percentage. Percentages are locale-independent and stored as-is. A `%` suffix is rendered inside the input wrapper.
+
+```ts
+// src/i18n/locale.ts
+export function fromDisplayPrice(localAmount: number): number {
+  return activeLocale === "pt-BR" ? localAmount / USD_TO_BRL : localAmount;
+}
+```
+
+```ts
+// src/main.ts — donation custom input handler
+checkoutForm.donationAmount = valid ? fromDisplayPrice(parsed) : 0;  // fixed
+checkoutForm.donationAmount = valid ? parsed : 0;                    // percent
+```
+
+### 13.5 Mutual exclusivity
+Selecting a preset in one mode (or typing in its custom field) deactivates the other mode entirely. Clicking **No donation** resets all state:
+
+```ts
+checkoutForm.donationType      = "none";
+checkoutForm.donationAmount    = 0;
+checkoutForm.donationCustomFixed   = "";
+checkoutForm.donationCustomPercent = "";
+```
+
+### 13.6 Active-state logic for preset buttons
+A preset button is highlighted only when:
+- `donationType` matches the button's group (`"fixed"` or `"percent"`), **and**
+- `donationAmount` matches the preset value, **and**
+- the custom input for that group is **empty** (`donationCustomFixed === ""` or `donationCustomPercent === ""`).
+
+This ensures that typing a custom value of `2` does not incorrectly highlight the `$2.00` preset.
+
+### 13.7 Donation amount calculation
+
+```ts
+// src/ui/checkoutView.ts
+const donationAmount =
+  f.donationType === "fixed"   ? f.donationAmount :
+  f.donationType === "percent" ? subtotal * f.donationAmount / 100 :
+  0;
+```
+
+### 13.8 Effect on grand total
+The grand total shown in the checkout order summary is:
+
+```
+Grand Total = Subtotal + Tip Amount + Donation Amount
+```
+
+Both tip and donation are included in `data-testid="checkout-total"`.
+
+### 13.9 No re-render while typing in custom fields
+Typing in a donation custom field calls `patchDonationSummary(cart)` instead of `render()`. This function surgically updates only the affected DOM nodes — the donation row, grand total text, custom-input active classes, and preset button active classes — without replacing the `<input>` element. This preserves the browser-managed cursor position across every keystroke.
+
+```ts
+// src/ui/checkoutView.ts (exported)
+export function patchDonationSummary(cart: CartStore): void {
+  // 1. Insert / update / remove the donation amount row in the totals.
+  // 2. Update the grand total <strong> text.
+  // 3. Toggle checkout-donation__custom-input--active on each custom input.
+  // 4. Toggle checkout-donation__btn--active on each preset button.
+}
+```
+
+### 13.10 State storage
+All donation state is held on the persistent `checkoutForm` object and survives navigation within the session:
+
+```ts
+// src/checkout/checkoutForm.ts
+donationType:          "none" as DonationType,  // "none" | "fixed" | "percent"
+donationAmount:        0,      // USD internally
+donationCustomFixed:   "",     // raw text in the fixed custom input
+donationCustomPercent: "",     // raw text in the percent custom input
+```
 
 ---
 

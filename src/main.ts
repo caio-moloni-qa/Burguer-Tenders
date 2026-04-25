@@ -8,7 +8,7 @@ import {
   clearCheckoutValidationError,
   clearCheckoutValidationErrors,
 } from "./checkout/checkoutErrors";
-import { checkoutForm, type PaymentMethod } from "./checkout/checkoutForm";
+import { checkoutForm, type PaymentMethod, type TipPercent, type DonationType } from "./checkout/checkoutForm";
 import { checkoutFieldFocusId, validateCheckout } from "./checkout/validateCheckout";
 import { getProductById, products } from "./data/products";
 import {
@@ -30,11 +30,11 @@ import {
   syncResolvedStoreFromAddress,
   toggleLocationPanel,
 } from "./location/location";
-import { setLocale } from "./i18n/locale";
+import { setLocale, fromDisplayPrice } from "./i18n/locale";
 import { getView, setView, subscribeView } from "./navigation";
-import { renderCheckoutView } from "./ui/checkoutView";
+import { renderCheckoutView, patchDonationSummary } from "./ui/checkoutView";
 import { renderConfirmationView } from "./ui/confirmationView";
-import { renderMenu, setMenuFilter } from "./ui/menu";
+import { renderMenu, setMenuFilter, setMenuSearch } from "./ui/menu";
 import { buildStoresBlockHtml, buildStoreStatusHtml } from "./ui/locationLayerHtml";
 import { renderCartLines, renderCartDrawerFoot } from "./ui/cartHtml";
 import { hidePageSpinner, showPageSpinner } from "./ui/pageSpinner";
@@ -498,8 +498,39 @@ function applyDrawerOpenState(): void {
 
 let confirmedUserName = "";
 
+/** Snapshot the caret position of an input matching `selector`, or -1 if not focused. */
+function getInputFocusSnapshot(selector: string): number {
+  const el = document.activeElement;
+  if (!el?.matches(selector)) {
+    return -1;
+  }
+  return (el instanceof HTMLInputElement ? el.selectionStart : null) ?? 0;
+}
+
+/** After a re-render, refocus an input and restore its caret position. */
+function restoreInputFocus(selector: string, caretPos: number): void {
+  requestAnimationFrame(() => {
+    const el = document.querySelector<HTMLInputElement>(selector);
+    if (!el) {
+      return;
+    }
+    el.focus();
+    // setSelectionRange is unsupported on type="number" inputs; the browser
+    // naturally places the cursor at the end after programmatic focus.
+    if (el.type !== "number") {
+      try {
+        el.setSelectionRange(caretPos, caretPos);
+      } catch {
+        /* invalid for some input types */
+      }
+    }
+  });
+}
+
 function render(): void {
   const locFocus = getLocationFieldFocusSnapshot();
+  const searchCaret = getInputFocusSnapshot("[data-menu-search]");
+
   const view = getView();
   if (view === "checkout") {
     renderCheckoutView(root, cart);
@@ -511,6 +542,9 @@ function render(): void {
   requestAnimationFrame(applyDrawerOpenState);
   if (locFocus) {
     restoreLocationFieldFocus(locFocus);
+  }
+  if (searchCaret >= 0) {
+    restoreInputFocus("[data-menu-search]", searchCaret);
   }
 }
 
@@ -547,12 +581,75 @@ root.addEventListener("click", (ev) => {
   if (!action) {
     return;
   }
+  if (action === "set-tip") {
+    const pct = parseInt(el.dataset.tipPercent ?? "0", 10);
+    if ([0, 10, 15, 20].includes(pct)) {
+      checkoutForm.tipPercent = pct as TipPercent;
+      if (getView() === "checkout") {
+        render();
+      }
+    }
+    return;
+  }
+  if (action === "set-donation") {
+    const type = el.dataset.donationType as DonationType | undefined;
+    if (type === "none") {
+      checkoutForm.donationType = "none";
+      checkoutForm.donationAmount = 0;
+      checkoutForm.donationCustomFixed = "";
+      checkoutForm.donationCustomPercent = "";
+    } else if (type === "fixed" || type === "percent") {
+      const amount = parseInt(el.dataset.donationAmount ?? "0", 10);
+      if (amount > 0) {
+        checkoutForm.donationType = type;
+        checkoutForm.donationAmount = amount;
+        // Clear both custom fields — a preset was explicitly chosen.
+        checkoutForm.donationCustomFixed = "";
+        checkoutForm.donationCustomPercent = "";
+      }
+    }
+    if (getView() === "checkout") {
+      render();
+    }
+    return;
+  }
   const productId = el.dataset.productId;
   handleCartAction(action, productId);
 });
 
 root.addEventListener("input", (ev) => {
   const target = ev.target as HTMLElement | null;
+  if (target?.matches("[data-menu-search]")) {
+    setMenuSearch((target as HTMLInputElement).value);
+    render();
+    return;
+  }
+  if (target?.matches("[data-donation-custom]")) {
+    const el = target as HTMLInputElement;
+    const customType = el.dataset.donationCustom as "fixed" | "percent";
+    const raw = el.value;
+    const parsed = parseFloat(raw);
+    const valid = raw !== "" && !isNaN(parsed) && parsed > 0;
+    if (customType === "fixed") {
+      checkoutForm.donationCustomFixed = raw;
+      checkoutForm.donationCustomPercent = "";
+      checkoutForm.donationType = valid ? "fixed" : "none";
+      // The user types in the displayed currency; convert back to USD for internal storage.
+      checkoutForm.donationAmount = valid ? fromDisplayPrice(parsed) : 0;
+    } else {
+      checkoutForm.donationCustomPercent = raw;
+      checkoutForm.donationCustomFixed = "";
+      checkoutForm.donationType = valid ? "percent" : "none";
+      // Percentages are currency-independent; store as-is.
+      checkoutForm.donationAmount = valid ? parsed : 0;
+    }
+    // Patch only the summary totals — do NOT re-render the whole page so the
+    // input element is never replaced and the cursor stays exactly where it is.
+    if (getView() === "checkout") {
+      patchDonationSummary(cart);
+    }
+    return;
+  }
   if (target?.matches("[data-location-field]")) {
     const el = target as HTMLInputElement | HTMLSelectElement;
     applyLocationField(el.dataset.locationField, el.value);

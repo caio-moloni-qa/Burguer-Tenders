@@ -25,6 +25,7 @@ function getFilterLabel(f: MenuFilter): string {
 }
 
 let activeFilter: MenuFilter = "all";
+let menuSearchQuery = "";
 
 export function setMenuFilter(filter: string): void {
   if (ALL_FILTERS.includes(filter as MenuFilter)) {
@@ -36,6 +37,14 @@ export function getMenuFilter(): MenuFilter {
   return activeFilter;
 }
 
+export function setMenuSearch(query: string): void {
+  menuSearchQuery = query.trim().toLowerCase();
+}
+
+export function getMenuSearch(): string {
+  return menuSearchQuery;
+}
+
 export function renderMenu(
   container: HTMLDivElement,
   items: readonly Product[],
@@ -44,9 +53,17 @@ export function renderMenu(
   const drawerOpen = cart.isDrawerOpen();
   const canAddToCart = hasDeliveryLocation();
 
-  const filtered = activeFilter === "all"
+  const categoryFiltered = activeFilter === "all"
     ? items
     : items.filter((p) => p.category === activeFilter);
+
+  const filtered = menuSearchQuery
+    ? categoryFiltered.filter(
+        (p) =>
+          p.name.toLowerCase().includes(menuSearchQuery) ||
+          p.description.toLowerCase().includes(menuSearchQuery)
+      )
+    : categoryFiltered;
 
   const list = filtered
     .map(
@@ -116,6 +133,20 @@ export function renderMenu(
             aria-label="Filter by category"
           >${filterOptions}</select>
         </div>
+      </div>
+      <div class="menu__search-row">
+        <label class="menu__search-label" for="menu-search">${t("menuSearchLabel")}</label>
+        <input
+          type="search"
+          id="menu-search"
+          class="menu__search-input"
+          data-menu-search
+          data-testid="menu-search"
+          placeholder="${escapeHtml(t("menuSearchPlaceholder"))}"
+          value="${escapeHtml(menuSearchQuery)}"
+          aria-label="${t("menuSearchLabel")}"
+          autocomplete="off"
+        />
       </div>
       <div class="product-grid" data-testid="product-grid">
         ${list}${emptyState}
