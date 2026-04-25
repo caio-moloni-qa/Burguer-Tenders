@@ -9,9 +9,9 @@
     "dev:all": "concurrently -k \"npm run server\" \"npm run dev\"",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed",
+    "test": "playwright test --config playwright/playwright.config.ts",
+    "test:ui": "playwright test --config playwright/playwright.config.ts --ui",
+    "test:headed": "playwright test --config playwright/playwright.config.ts --headed",
     "test:report": "playwright show-report"
   },
   "dependencies": {
