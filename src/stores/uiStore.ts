@@ -1,0 +1,50 @@
+import { create } from "zustand";
+
+export type AppView = "shop" | "checkout" | "confirmation";
+
+export type MenuFilter = "all" | "burger" | "tenders" | "combo" | "drink" | "side";
+
+type UiState = {
+  view: AppView;
+  menuFilter: MenuFilter;
+  menuSearch: string;
+  /** Toast message — empty string means hidden. */
+  toastItemName: string;
+  /** Stable counter so the toast component can re-trigger its hide-timer on repeated adds. */
+  toastVersion: number;
+  pageSpinnerVisible: boolean;
+  /**
+   * Product the user tried to add to the cart while no delivery location was set.
+   * The location-save handler reads this, adds the item, then clears it.
+   */
+  pendingAddProductId: string | null;
+
+  setView: (view: AppView) => void;
+  setMenuFilter: (filter: MenuFilter) => void;
+  setMenuSearch: (query: string) => void;
+  showToast: (itemName: string) => void;
+  hideToast: () => void;
+  showPageSpinner: () => void;
+  hidePageSpinner: () => void;
+  setPendingAddProductId: (productId: string | null) => void;
+};
+
+export const useUiStore = create<UiState>((set) => ({
+  view: "shop",
+  menuFilter: "all",
+  menuSearch: "",
+  toastItemName: "",
+  toastVersion: 0,
+  pageSpinnerVisible: false,
+  pendingAddProductId: null,
+
+  setView: (view) => set({ view }),
+  setMenuFilter: (menuFilter) => set({ menuFilter }),
+  setMenuSearch: (menuSearch) => set({ menuSearch: menuSearch.toLowerCase() }),
+  showToast: (itemName) =>
+    set((s) => ({ toastItemName: itemName, toastVersion: s.toastVersion + 1 })),
+  hideToast: () => set({ toastItemName: "" }),
+  showPageSpinner: () => set({ pageSpinnerVisible: true }),
+  hidePageSpinner: () => set({ pageSpinnerVisible: false }),
+  setPendingAddProductId: (pendingAddProductId) => set({ pendingAddProductId }),
+}));

@@ -1,7 +1,4 @@
-import { checkoutForm } from "./checkoutForm";
-import { locationDelivery } from "../location/location";
-
-type CheckoutFormState = typeof checkoutForm;
+import type { CheckoutForm } from "../stores/checkoutStore";
 
 export type CheckoutValidationResult = {
   valid: boolean;
@@ -11,7 +8,7 @@ export type CheckoutValidationResult = {
 
 function isValidEmail(s: string): boolean {
   const at = s.trim().indexOf("@");
-  if (!at) {
+  if (at <= 0) {
     return false;
   }
   const domain = s.trim().slice(at + 1);
@@ -29,9 +26,7 @@ function isValidCardNumber(s: string): boolean {
   return /^\d{13,19}$/.test(digits);
 }
 
-/**
- * Expects "MM / YY". Month 01-12, not expired relative to the current month.
- */
+/** Expects "MM / YY". Month 01-12, not expired relative to the current month. */
 function isValidExpiry(s: string): boolean {
   const digits = s.replace(/\D/g, "");
   if (digits.length !== 4) {
@@ -44,19 +39,23 @@ function isValidExpiry(s: string): boolean {
   }
   // Card is valid through the last day of the expiry month.
   const now = new Date();
-  const expiry = new Date(year, month); // 1st of the month AFTER expiry
+  const expiry = new Date(year, month);
   return expiry > now;
 }
 
-/** 3 or 4 digits, nothing else. */
 function isValidCvc(s: string): boolean {
   return /^\d{3,4}$/.test(s.trim());
 }
 
 /**
  * Validates mandatory checkout fields. Card fields required only when paying by card.
+ * `fallbackZip` lets the caller pass the saved-delivery ZIP so the checkout form
+ * doesn't fail validation when the zip input is empty but a delivery is set.
  */
-export function validateCheckout(f: CheckoutFormState): CheckoutValidationResult {
+export function validateCheckout(
+  f: CheckoutForm,
+  fallbackZip = ""
+): CheckoutValidationResult {
   const errors: Record<string, string> = {};
 
   if (!f.fullName.trim()) {
@@ -68,7 +67,7 @@ export function validateCheckout(f: CheckoutFormState): CheckoutValidationResult
     errors.email = "Enter a valid email address.";
   }
 
-  const zip = f.zipCode.trim() || locationDelivery.zipCode.trim();
+  const zip = f.zipCode.trim() || fallbackZip.trim();
   if (!zip) {
     errors.zipCode = "ZIP / postal code is required.";
   }
