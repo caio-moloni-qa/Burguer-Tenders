@@ -3,6 +3,15 @@ import { ZIPS } from "../data/testData";
 
 const CHEESEBURGUER = "cheeseburguer";
 
+function isBrlPrice(value: string): boolean {
+  return value.trim().startsWith("R$");
+}
+
+function isUsdPrice(value: string): boolean {
+  const text = value.trim();
+  return text.startsWith("$") && text.length > 1 && text[1] >= "0" && text[1] <= "9";
+}
+
 test.describe("Dynamic Translation", () => {
   test.beforeEach(async ({ app }) => {
     await app.gotoMenu();
@@ -27,7 +36,7 @@ test.describe("Dynamic Translation", () => {
     const prices = await app.menu.allProductPricesText();
     expect(prices.length).toBeGreaterThan(0);
     for (const price of prices) {
-      expect(price.trim()).toMatch(/^R\$/);
+      expect(isBrlPrice(price)).toBe(true);
     }
   });
 
@@ -38,8 +47,8 @@ test.describe("Dynamic Translation", () => {
     const prices = await app.menu.allProductPricesText();
     expect(prices.length).toBeGreaterThan(0);
     for (const price of prices) {
-      expect(price.trim()).toMatch(/^\$\d/);
-      expect(price.trim()).not.toMatch(/^R\$/);
+      expect(isUsdPrice(price)).toBe(true);
+      expect(isBrlPrice(price)).toBe(false);
     }
   });
 
@@ -145,7 +154,7 @@ test.describe("Dynamic Translation", () => {
     await expect(app.menu.filterButton("all")).toContainText("Tudo");
 
     const [firstPrice] = await app.menu.allProductPricesText();
-    expect(firstPrice.trim()).toMatch(/^R\$/);
+    expect(isBrlPrice(firstPrice)).toBe(true);
   });
 
   test("Switching from BR to US location reverts to English and USD", async ({ app }) => {
@@ -158,7 +167,7 @@ test.describe("Dynamic Translation", () => {
     await expect(app.menu.filterButton("all")).toContainText("All");
 
     const [firstPrice] = await app.menu.allProductPricesText();
-    expect(firstPrice.trim()).toMatch(/^\$\d/);
-    expect(firstPrice.trim()).not.toMatch(/^R\$/);
+    expect(isUsdPrice(firstPrice)).toBe(true);
+    expect(isBrlPrice(firstPrice)).toBe(false);
   });
 });

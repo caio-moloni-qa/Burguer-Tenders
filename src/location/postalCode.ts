@@ -1,3 +1,5 @@
+import { digitsOnly } from "../utils/text";
+
 /**
  * Returns true when the entered ZIP/postal code is in a complete-enough form
  * to be auto-looked-up on input blur.
@@ -5,7 +7,7 @@
  *  - Other (e.g. US): 5 digits
  */
 export function shouldAutoLookupPostal(zip: string, countryCode: string): boolean {
-  const digits = zip.replace(/\D/g, "");
+  const digits = digitsOnly(zip);
   if (countryCode === "BR") {
     return digits.length === 8;
   }

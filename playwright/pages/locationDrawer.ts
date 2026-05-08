@@ -36,9 +36,15 @@ export class LocationDrawer {
 
   async selectCountry(country: CountryCode): Promise<void> {
     await this.country.locator("xpath=ancestor::*[contains(@class,'MuiInputBase-root')]").click();
-    await this.page.getByRole("option", {
-      name: country === "BR" ? /Brazil|Brasil/ : /United States|Estados Unidos/,
-    }).click();
+    const option =
+      country === "BR"
+        ? this.page.getByRole("option", { name: "Brazil" }).or(
+            this.page.getByRole("option", { name: "Brasil" })
+          )
+        : this.page.getByRole("option", { name: "United States" }).or(
+            this.page.getByRole("option", { name: "Estados Unidos" })
+          );
+    await option.click();
   }
 
   async beginLookup(zip: string, country: CountryCode): Promise<void> {

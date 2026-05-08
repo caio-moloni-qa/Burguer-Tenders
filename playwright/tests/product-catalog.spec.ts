@@ -1,6 +1,17 @@
 import { test, expect } from "../helpers/fixtures";
 import { SPICY_PRODUCT_IDS } from "../data/testData";
 
+function isUsdPrice(value: string): boolean {
+  const text = value.trim();
+  if (!text.startsWith("$")) {
+    return false;
+  }
+  const [dollars, cents] = text.slice(1).split(".");
+  return Boolean(dollars) &&
+    cents?.length === 2 &&
+    [...dollars, ...cents].every((char) => char >= "0" && char <= "9");
+}
+
 test.describe("Product Catalog", () => {
   test.beforeEach(async ({ app }) => {
     await app.gotoMenu();
@@ -17,15 +28,16 @@ test.describe("Product Catalog", () => {
       const card = app.menu.productCards.nth(i);
       await expect(app.menu.productName(card)).not.toBeEmpty();
       await expect(app.menu.productDescription(card)).not.toBeEmpty();
-      await expect(app.menu.productPrice(card)).toHaveText(/^\$\d+\.\d{2}$/);
-      await expect(app.menu.productImage(card)).toHaveAttribute("src", /.+/);
+      expect(isUsdPrice(await app.menu.productPrice(card).innerText())).toBe(true);
+      expect(await app.menu.productImage(card).getAttribute("src")).toBeTruthy();
     }
   });
 
   test("Spicy badge appears only on spicy products", async ({ app }) => {
     for (const id of SPICY_PRODUCT_IDS) {
       await expect(app.menu.productBadge(id)).toBeVisible();
-      await expect(app.menu.productBadge(id)).toHaveText(/spicy|picante/i);
+      const badge = (await app.menu.productBadge(id).innerText()).toLowerCase();
+      expect(["spicy", "picante"]).toContain(badge);
     }
   });
 
@@ -47,7 +59,7 @@ test.describe("Product Catalog", () => {
     const count = await prices.count();
 
     for (let i = 0; i < count; i++) {
-      await expect(prices.nth(i)).toHaveText(/^\$\d+\.\d{2}$/);
+      expect(isUsdPrice(await prices.nth(i).innerText())).toBe(true);
     }
   });
 });

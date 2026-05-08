@@ -1,5 +1,6 @@
 import type { CheckoutForm } from "../stores/checkoutStore";
 import { t } from "../i18n/locale";
+import { digitsOnly, isLetter } from "../utils/text";
 
 export type CheckoutValidationResult = {
   valid: boolean;
@@ -18,18 +19,27 @@ function isValidEmail(s: string): boolean {
 
 /** Only letters (including accented), spaces, hyphens, and apostrophes. */
 function isValidCardName(s: string): boolean {
-  return /^[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+$/.test(s.trim());
+  const trimmed = s.trim();
+  if (!trimmed) {
+    return false;
+  }
+  for (const char of trimmed) {
+    if (!isLetter(char) && char !== " " && char !== "-" && char !== "'") {
+      return false;
+    }
+  }
+  return true;
 }
 
 /** 13–19 digits (spaces stripped). */
 function isValidCardNumber(s: string): boolean {
-  const digits = s.replace(/\s/g, "");
-  return /^\d{13,19}$/.test(digits);
+  const digits = digitsOnly(s);
+  return digits.length >= 13 && digits.length <= 19;
 }
 
 /** Expects "MM / YY". Month 01-12, not expired relative to the current month. */
 function isValidExpiry(s: string): boolean {
-  const digits = s.replace(/\D/g, "");
+  const digits = digitsOnly(s);
   if (digits.length !== 4) {
     return false;
   }
@@ -45,7 +55,8 @@ function isValidExpiry(s: string): boolean {
 }
 
 function isValidCvc(s: string): boolean {
-  return /^\d{3,4}$/.test(s.trim());
+  const digits = digitsOnly(s);
+  return digits.length >= 3 && digits.length <= 4 && digits.length === s.trim().length;
 }
 
 /**
@@ -80,7 +91,7 @@ export function validateCheckout(
       errors.cardNameOnCard = t("checkoutErrorCardNameInvalid");
     }
 
-    const rawNumber = f.cardNumber.replace(/\s/g, "");
+    const rawNumber = digitsOnly(f.cardNumber);
     if (!rawNumber) {
       errors.cardNumber = t("checkoutErrorCardNumberRequired");
     } else if (!isValidCardNumber(f.cardNumber)) {

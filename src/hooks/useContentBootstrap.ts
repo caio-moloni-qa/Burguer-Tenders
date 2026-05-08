@@ -2,21 +2,29 @@ import { useEffect, useState } from "react";
 import { hydrateContentFromDatabase } from "../api/contentApi";
 import { useUiStore } from "../stores/uiStore";
 
-export function useContentBootstrap(): boolean {
+type ContentBootstrapState = {
+  ready: boolean;
+  error: string;
+};
+
+export function useContentBootstrap(): ContentBootstrapState {
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState("");
   const bumpLocaleVersion = useUiStore((s) => s.bumpLocaleVersion);
 
   useEffect(() => {
     let cancelled = false;
 
-    hydrateContentFromDatabase()
-      .catch((error) => {
-        console.error(error);
-      })
-      .finally(() => {
+    void hydrateContentFromDatabase()
+      .then(() => {
         if (!cancelled) {
           bumpLocaleVersion();
           setReady(true);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setError(error instanceof Error ? error.message : "Content load failed");
         }
       });
 
@@ -25,5 +33,5 @@ export function useContentBootstrap(): boolean {
     };
   }, [bumpLocaleVersion]);
 
-  return ready;
+  return { ready, error };
 }

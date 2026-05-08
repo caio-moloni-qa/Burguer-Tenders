@@ -1,4 +1,5 @@
 import type { StoreDefinition } from "../types/store";
+import { normalizeSpaces, withoutCombiningMarks } from "../utils/text";
 
 export const STORES: readonly StoreDefinition[] = [
   {
@@ -22,12 +23,7 @@ export const STORES: readonly StoreDefinition[] = [
 ];
 
 function normalizeCity(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, " ");
+  return normalizeSpaces(withoutCombiningMarks(s).toLowerCase());
 }
 
 /** Nominatim may return "NY" or "New York" for US. */
@@ -45,10 +41,13 @@ function canonicalState(countryCode: string, state: string): string {
     return "";
   }
   if (countryCode === "US") {
-    if (/^[A-Za-z]{2}$/.test(t)) {
+    if (t.length === 2 && t.split("").every((char) => {
+      const lower = char.toLowerCase();
+      return lower >= "a" && lower <= "z";
+    })) {
       return t.toUpperCase();
     }
-    const fromName = US_STATE_NAME_TO_CODE[t.toLowerCase().replace(/\s+/g, " ")];
+    const fromName = US_STATE_NAME_TO_CODE[normalizeSpaces(t.toLowerCase())];
     return fromName ?? "";
   }
   return t.toUpperCase().slice(0, 2);

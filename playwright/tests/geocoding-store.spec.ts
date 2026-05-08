@@ -23,9 +23,11 @@ test.describe("Address Geocoding & Store Resolution", () => {
 
   test("Unknown city ZIP shows no-delivery message", async ({ app }) => {
     await app.lookupAddress(ZIPS.curitiba.zip, "BR");
-    await expect(app.location.storeStatus).toContainText(
-      /don't deliver to this city yet|não entregamos nesta cidade/i
-    );
+    const status = (await app.location.storeStatus.innerText()).toLowerCase();
+    expect(
+      status.includes("don't deliver to this city yet") ||
+        status.includes("não entregamos nesta cidade")
+    ).toBe(true);
   });
 
   test("Address fields are populated after a successful lookup", async ({ app }) => {

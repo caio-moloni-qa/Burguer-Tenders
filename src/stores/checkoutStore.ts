@@ -4,7 +4,6 @@ export type PaymentMethod = "card" | "pay-in-restaurant";
 export type TipPercent = 0 | 10 | 15 | 20;
 export type DonationType = "none" | "fixed" | "percent";
 
-export const DONATION_ASSOCIATION = "Associação de doações Teste";
 export const DONATION_FIXED_OPTIONS = [1, 2, 5] as const;
 export const DONATION_PERCENT_OPTIONS = [1, 2, 5] as const;
 
@@ -83,3 +82,4 @@ function omitKey<T extends Record<string, unknown>>(obj: T, key: string): T {
   delete next[key];
   return next;
 }
+

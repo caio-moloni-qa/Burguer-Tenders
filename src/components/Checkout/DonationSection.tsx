@@ -10,7 +10,6 @@ import {
 } from "@mui/material";
 import VolunteerActivismRoundedIcon from "@mui/icons-material/VolunteerActivismRounded";
 import {
-  DONATION_ASSOCIATION,
   DONATION_FIXED_OPTIONS,
   DONATION_PERCENT_OPTIONS,
   type DonationType,
@@ -68,7 +67,7 @@ export function DonationSection() {
       >
         <VolunteerActivismRoundedIcon fontSize="small" color="primary" />
         <Typography variant="body2">
-          {t("checkoutDonation")} <strong>{DONATION_ASSOCIATION}</strong>
+          {t("checkoutDonation")} <strong>{t("checkoutDonationAssociation")}</strong>
         </Typography>
       </Stack>
 

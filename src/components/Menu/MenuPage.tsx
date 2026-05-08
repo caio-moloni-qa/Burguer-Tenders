@@ -7,6 +7,7 @@ import { CategoryFilter } from "./CategoryFilter";
 import { MenuSearch } from "./MenuSearch";
 import { ProductCard } from "./ProductCard";
 import { PromoBanner } from "./PromoBanner";
+import { ReorderPrompt } from "./ReorderPrompt";
 import { localizedProductDescription, productName, t } from "../../i18n/locale";
 
 export function MenuPage() {
@@ -33,6 +34,7 @@ export function MenuPage() {
     <>
       <Header />
       <PromoBanner />
+      <ReorderPrompt />
       <Container
         component="main"
         maxWidth={false}

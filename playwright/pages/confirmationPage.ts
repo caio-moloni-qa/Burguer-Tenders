@@ -10,7 +10,7 @@ export class ConfirmationPage {
   constructor(private readonly page: Page) {
     this.pageRoot = page.getByTestId("confirmation-page");
     this.title = page.getByTestId("confirm-title");
-    this.subtitle = page.getByText(/Your order is placed!|Seu pedido foi realizado!/);
+    this.subtitle = page.getByTestId("confirm-subtitle");
     this.eta = page.getByTestId("confirm-eta");
     this.backToMenu = page.getByTestId("confirm-back");
   }

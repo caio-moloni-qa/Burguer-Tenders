@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -12,77 +13,27 @@ const connectionString =
   process.env.DATABASE_URL ||
   "postgres://beetee:beetee_dev_password@localhost:5432/beetee_dev";
 
-const PROMOS = [
-  {
-    id: "combo",
-    imageSrc: "/images/promos/promo-combo.jpg",
-    imagePosition: "75% 35%",
-  },
-  {
-    id: "spicy",
-    imageSrc: "/images/promos/promo-spicy.jpg",
-    imagePosition: "75% 28%",
-  },
-  {
-    id: "delivery",
-    imageSrc: "/images/promos/promo-delivery.jpg",
-    imagePosition: "60% 38%",
-  },
-];
-
-function evalObjectLiteral(source, before, after) {
-  const start = source.indexOf(before);
-  if (start === -1) {
-    throw new Error(`Could not find marker: ${before}`);
-  }
-  const valueStart = start + before.length;
-  const end = source.indexOf(after, valueStart);
-  if (end === -1) {
-    throw new Error(`Could not find marker: ${after}`);
-  }
-  const literal = source.slice(valueStart, end).trim();
-  return Function(`"use strict"; return (${literal});`)();
+async function readSeedJson(fileName) {
+  const filePath = path.join(rootDir, "database", "seeds", fileName);
+  return JSON.parse(await readFile(filePath, "utf8"));
 }
 
 async function loadSeedContent() {
-  const [localeSource, productsSource] = await Promise.all([
-    readFile(path.join(rootDir, "src", "i18n", "locale.ts"), "utf8"),
-    readFile(path.join(rootDir, "src", "data", "products.ts"), "utf8"),
+  const [translations, products, promos] = await Promise.all([
+    readSeedJson("translations.json"),
+    readSeedJson("products.json"),
+    readSeedJson("promos.json"),
   ]);
-  const locale = localeSource.replace(/\r\n/g, "\n");
-  const productsFile = productsSource.replace(/\r\n/g, "\n");
-
-  const productDescriptions = evalObjectLiteral(
-    locale,
-    "const productDescriptions: Record<Locale, Record<string, string>> = ",
-    ";\n\nexport function productDescription"
-  );
-  const en = evalObjectLiteral(
-    locale,
-    "const en: Dictionary = ",
-    ";\n\nconst pt"
-  );
-  const pt = evalObjectLiteral(
-    locale,
-    "const pt: Dictionary = ",
-    ";\n\nlet translations"
-  );
-  const products = evalObjectLiteral(
-    productsFile,
-    "export let products: readonly Product[] = ",
-    ";\n\nexport function getProductById"
-  );
-
-  return {
-    translations: { "en-US": en, "pt-BR": pt },
-    productDescriptions,
-    products,
-  };
+  return { translations, products, promos };
 }
 
 const seed = await loadSeedContent();
 const pool = new Pool({ connectionString });
 const client = await pool.connect();
+
+function hashPassword(password) {
+  return createHash("sha256").update(`beetee:${password}`).digest("hex");
+}
 
 try {
   await client.query("BEGIN");
@@ -129,9 +80,7 @@ try {
       ]
     );
 
-    for (const locale of ["en-US", "pt-BR"]) {
-      const description =
-        seed.productDescriptions[locale]?.[product.id] ?? product.description;
+    for (const [locale, translation] of Object.entries(product.translations)) {
       await client.query(
         `
           INSERT INTO product_translations (
@@ -145,12 +94,18 @@ try {
             description = EXCLUDED.description,
             updated_at = now()
         `,
-        [product.id, locale, product.name, product.shortName, description]
+        [
+          product.id,
+          locale,
+          translation.name,
+          translation.shortName,
+          translation.description,
+        ]
       );
     }
   }
 
-  for (const [index, promo] of PROMOS.entries()) {
+  for (const [index, promo] of seed.promos.entries()) {
     await client.query(
       `
         INSERT INTO promos (id, image_src, image_position, sort_order)
@@ -165,6 +120,97 @@ try {
       [promo.id, promo.imageSrc, promo.imagePosition, index]
     );
   }
+
+  await client.query(
+    `
+      INSERT INTO users (id, email, password_hash, first_name, last_name)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (id)
+      DO UPDATE SET
+        email = EXCLUDED.email,
+        password_hash = EXCLUDED.password_hash,
+        first_name = EXCLUDED.first_name,
+        last_name = EXCLUDED.last_name,
+        updated_at = now()
+    `,
+    [
+      "demo-user",
+      "alex@beetees.test",
+      hashPassword("beetee123"),
+      "Alex",
+      "Burger",
+    ]
+  );
+
+  await client.query(
+    `
+      INSERT INTO user_locations (
+        user_id, zip_code, country_code, street_line, neighborhood,
+        city, state, country, complement, store_id
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        zip_code = EXCLUDED.zip_code,
+        country_code = EXCLUDED.country_code,
+        street_line = EXCLUDED.street_line,
+        neighborhood = EXCLUDED.neighborhood,
+        city = EXCLUDED.city,
+        state = EXCLUDED.state,
+        country = EXCLUDED.country,
+        complement = EXCLUDED.complement,
+        store_id = EXCLUDED.store_id,
+        updated_at = now()
+    `,
+    [
+      "demo-user",
+      "01001-000",
+      "BR",
+      "Praca da Se",
+      "Se",
+      "Sao Paulo",
+      "SP",
+      "Brazil",
+      "Apt 42",
+      "br-sp-pinheiros",
+    ]
+  );
+
+  await client.query(
+    `
+      INSERT INTO orders (id, user_id, total_usd, delivery, lines)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (id)
+      DO UPDATE SET
+        total_usd = EXCLUDED.total_usd,
+        delivery = EXCLUDED.delivery,
+        lines = EXCLUDED.lines
+    `,
+    [
+      "demo-order-favorite",
+      "demo-user",
+      9.99,
+      JSON.stringify({
+        zipCode: "01001-000",
+        countryCode: "BR",
+        streetLine: "Praca da Se",
+        neighborhood: "Se",
+        city: "Sao Paulo",
+        state: "SP",
+        country: "Brazil",
+        complement: "Apt 42",
+        storeId: "br-sp-pinheiros",
+      }),
+      JSON.stringify([
+        {
+          productId: "combo-tenders-cheeseburguer",
+          quantity: 1,
+          unitPriceUsd: 9.99,
+          customizationSummary: [],
+        },
+      ]),
+    ]
+  );
 
   await client.query("COMMIT");
   console.log("Database content seed is ready.");

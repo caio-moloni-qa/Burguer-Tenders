@@ -1,6 +1,12 @@
 import { create } from "zustand";
 
-export type AppView = "shop" | "checkout" | "confirmation";
+export type AppView =
+  | "shop"
+  | "checkout"
+  | "confirmation"
+  | "login"
+  | "signup"
+  | "profile";
 
 export type MenuFilter = "all" | "burger" | "tenders" | "combo" | "drink" | "side";
 

@@ -14,7 +14,6 @@ import {
   useCartStore,
 } from "../../stores/cartStore";
 import {
-  DONATION_ASSOCIATION,
   type TipPercent,
   useCheckoutStore,
 } from "../../stores/checkoutStore";
@@ -151,7 +150,7 @@ export function OrderSummary() {
             sx={{ justifyContent: "space-between" }}
             data-testid="checkout-donation-amount"
           >
-            <Typography variant="body2">{DONATION_ASSOCIATION}</Typography>
+            <Typography variant="body2">{t("checkoutDonationAssociation")}</Typography>
             <Typography variant="body2">{formatPrice(donationAmount)}</Typography>
           </Stack>
         )}

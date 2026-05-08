@@ -16,7 +16,7 @@ export class CheckoutPage {
 
   constructor(private readonly page: Page) {
     this.pageRoot = page.getByTestId("checkout-page");
-    this.title = this.pageRoot.getByRole("heading", { name: /Checkout|Finalizar pedido/ });
+    this.title = this.pageRoot.getByRole("heading");
     this.backToShop = page.getByTestId("back-to-shop");
     this.name = page.getByTestId("checkout-name");
     this.email = page.getByTestId("checkout-email");

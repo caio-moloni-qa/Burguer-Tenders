@@ -43,6 +43,20 @@
    `patchCartDOM`, `patchDonationSummary`, and caret-restoration rules from
    `master` are obsolete.
 
+8. **PostgreSQL is now the authoritative source for content and accounts.**
+   Products, promo metadata, UI translations, users, saved user locations, and
+   authenticated order history are backed by PostgreSQL schema + seed files in
+   `database/`.
+
+9. **Authentication and profile workflows were added.**
+   Guests can still use the existing shop/cart/checkout flow. Authenticated
+   users can sign up, log in, update profile details, review previous orders,
+   reorder previous orders, and log out.
+
+10. **Reusable agent/MCP config moved out of IDE-specific folders.**
+    MCP config and rules now live under `mcps/` instead of `.cursor/` or
+    `.vscode/`, so the same files can be reused across IDEs.
+
 ---
 
 ## Table of Contents
@@ -51,24 +65,28 @@
 2. [Rebrand and Presentation](#2-rebrand-and-presentation)
 3. [Store Network and Service Areas](#3-store-network-and-service-areas)
 4. [Delivery Location](#4-delivery-location)
-5. [Product Customization](#5-product-customization)
-6. [Cart](#6-cart)
-7. [Checkout Validation](#7-checkout-validation)
-8. [Tips and Donations](#8-tips-and-donations)
-9. [Order Placement](#9-order-placement)
-10. [Navigation and UI State](#10-navigation-and-ui-state)
-11. [Address Geocoding](#11-address-geocoding)
-12. [Dynamic Translation and Currency](#12-dynamic-translation-and-currency)
-13. [Automated Test Structure](#13-automated-test-structure)
+5. [Authentication and Account Profile](#5-authentication-and-account-profile)
+6. [Product Customization](#6-product-customization)
+7. [Cart](#7-cart)
+8. [Checkout Validation](#8-checkout-validation)
+9. [Tips and Donations](#9-tips-and-donations)
+10. [Order Placement](#10-order-placement)
+11. [Navigation and UI State](#11-navigation-and-ui-state)
+12. [Address Geocoding](#12-address-geocoding)
+13. [Dynamic Translation and Currency](#13-dynamic-translation-and-currency)
+14. [Automated Test Structure](#14-automated-test-structure)
+15. [Reusable MCP and Agent Rules](#15-reusable-mcp-and-agent-rules)
 
 ---
 
 ## 1. Product Catalog
 
-### 1.1 Fixed catalog
+### 1.1 DB-backed catalog
 
-The catalog is static and defined in `src/data/products.ts`. There is no backend
-catalog API.
+PostgreSQL is authoritative for catalog content. The schema lives in
+`database/schema.sql`, and seed data lives in `database/seeds/products.json`.
+The frontend `src/data/products.ts` module is only a runtime cache populated by
+`GET /api/content`.
 
 | Category | Count | Notes |
 |---|---:|---|
@@ -78,8 +96,8 @@ catalog API.
 | `drink` | 2 | Includes `doctor-bt` and `guarana` |
 | `side` | 4 | Includes fries and milkshakes |
 
-The full catalog still contains 16 products. Product ids and prices remain the
-same as `master`.
+The full catalog contains 16 products. Product ids and prices are seeded into
+PostgreSQL and loaded into React during app bootstrap.
 
 ### 1.2 Product shape
 
@@ -93,15 +111,25 @@ type Product = {
   description: string;
   imageSrc: string;
   priceUsd: number;
+  caloriesKcal: number;
   category: "burger" | "tenders" | "combo" | "drink" | "side";
   spicy: boolean;
+  translations: Record<Locale, ProductTranslation>;
 };
 ```
 
-`priceUsd` remains the canonical stored amount. Localized display conversion is
-handled separately by `src/i18n/locale.ts`.
+`priceUsd` remains the canonical stored amount. `caloriesKcal` is displayed on
+product cards. Localized product names, short names, and descriptions come from
+`product_translations`.
 
-### 1.3 Spicy badge
+### 1.3 Content ownership
+
+Product, promo, and translation content must be changed in database seed files
+or directly in the database. Do not add static product or translation literals
+back into `src/data/products.ts`, `src/data/promos.ts`, or
+`src/i18n/locale.ts`.
+
+### 1.4 Spicy badge
 
 Products with `spicy: true` display a MUI `Chip` with a fire icon and localized
 text:
@@ -111,7 +139,7 @@ text:
 
 No other product availability rule depends on `spicy`.
 
-### 1.4 Category filtering
+### 1.5 Category filtering
 
 The menu category filter is a MUI `ToggleButtonGroup`, not a native select. It
 offers these filter values:
@@ -128,7 +156,7 @@ offers these filter values:
 The selected filter is stored in `useUiStore.menuFilter` and survives normal
 React re-renders, drawer open/close, and location updates.
 
-### 1.5 Menu search
+### 1.6 Menu search
 
 Menu search is collapsed by default. Clicking the search icon opens the input
 and focuses it.
@@ -136,7 +164,7 @@ and focuses it.
 Search rules:
 
 - Search text is stored lowercased in `useUiStore.menuSearch`.
-- It matches `product.name` and `product.description`.
+- It matches the localized product name and localized product description.
 - Matching is case-insensitive and accent-sensitive.
 - Category filtering runs first; search narrows the category-filtered result.
 - Closing search clears the query.
@@ -168,12 +196,15 @@ The UI is built with MUI components and a custom dark BeeTee's theme in
 |---|---|
 | `useUiStore` | View, filters, search, toast, spinner, customizer, pending add |
 | `useCartStore` | Cart lines and cart drawer state |
+| `useAuthStore` | Authenticated user, previous orders, reorder prompt state |
 | `useLocationStore` | Delivery draft, saved/synced state, lookup status, location drawer |
 | `useCheckoutStore` | Checkout form, validation errors, confirmed customer name |
 
 ### 2.3 Promo banner
 
-The menu page includes a rotating promo banner with three slides:
+The menu page includes a rotating promo banner with three slides. Promo image
+metadata is DB-backed through `database/seeds/promos.json`, while localized
+promo copy comes from `database/seeds/translations.json`.
 
 | Promo id | Headline | Asset |
 |---|---|---|
@@ -241,6 +272,10 @@ When the user clicks "Add to cart" without a saved location:
 After the user saves a valid location, the app opens the customizer for the
 pending product instead of adding it directly.
 
+Signup also requires a valid deliverable location. The account cannot be
+created until the user selects a country, enters a postal code, runs lookup, and
+the resolved address maps to a supported store.
+
 ### 4.2 Valid saved location
 
 A delivery location is considered valid only when all conditions are true:
@@ -269,13 +304,13 @@ hydrates the location store and sets the locale from the saved country.
 
 ### 4.5 Country selector
 
-The location drawer country selector supports:
+The location drawer and signup form country selector support:
 
 - `US` - United States
 - `BR` - Brazil
 
-Changing the country immediately updates the visible store list and invalidates
-the synced location until the user saves again.
+Changing the country immediately updates the active locale, updates the visible
+store list, and invalidates the synced location until the user saves again.
 
 ### 4.6 ZIP auto-lookup
 
@@ -296,15 +331,110 @@ After lookup ends, save remains disabled for 500 ms before being released.
 
 ---
 
-## 5. Product Customization
+## 5. Authentication and Account Profile
 
-### 5.1 Customizer opening
+### 5.1 Guest workflow
+
+Guests can browse products, set delivery location, customize items, use the
+cart, complete checkout, and see the confirmation page without logging in.
+Guest orders are not saved to authenticated order history.
+
+### 5.2 Signup
+
+Signup creates a database-backed user and immediately starts an authenticated
+session. Required signup fields:
+
+| Field | Rule |
+|---|---|
+| First name | Must not be blank |
+| Last name | Must not be blank |
+| Email | Must be unique and contain a valid email-like shape |
+| Password | Minimum 8 characters |
+| Confirm password | Must match password |
+| Country | `US` or `BR` |
+| ZIP / postal code | Must resolve through geocoding |
+| Store | Resolved location must map to a supported BeeTee's store |
+
+The selected signup country sets the active locale:
+
+- `BR` sets `pt-BR`.
+- `US` sets `en-US`.
+
+The resolved signup location is stored in `user_locations` and also saved into
+the active session delivery state.
+
+### 5.3 Login
+
+Login requires email and password. On success:
+
+1. The server stores `userId` in the session.
+2. Any saved user location hydrates the delivery session.
+3. The frontend loads previous orders.
+4. A smooth success overlay appears before navigation.
+5. The user returns to the shop.
+
+### 5.4 Signup success animation
+
+Successful signup shows a smooth success overlay before navigating to profile.
+The overlay uses localized DB-backed copy.
+
+### 5.5 Profile access
+
+Authenticated users can open profile from the header profile icon. Guests who
+click the same icon are sent to login.
+
+### 5.6 Account details
+
+The profile Account Details tab lets the user update:
+
+- First name.
+- Last name.
+- Email.
+- Location fields.
+
+Saving account details writes to `users` and `user_locations`. If the saved
+profile location changes country, the active locale follows that location.
+
+### 5.7 Previous orders
+
+The Previous Orders tab loads authenticated order history from `orders`.
+Clicking an order opens a modal with order line details.
+
+### 5.8 Reorder
+
+Authenticated users can reorder previous orders from:
+
+- The previous-order details modal.
+- The home-screen reorder prompt.
+
+Reordering adds the previous order's lines back into the cart.
+
+### 5.9 Reorder prompt
+
+When an authenticated user with previous orders lands on the shop view, the app
+shows a localized prompt:
+
+- English: `Feeling hungry? Reorder your favorite combo!`
+- Portuguese: `Com fome? Peca seu combo favorito de novo!`
+
+The prompt can be dismissed or used to reorder the most recent previous order.
+
+### 5.10 Logout
+
+Logout clears the authenticated user from the server session and frontend auth
+store, then returns the user to the guest workflow.
+
+---
+
+## 6. Product Customization
+
+### 6.1 Customizer opening
 
 With a valid saved location, clicking a product's "Add to cart" button opens
 `ItemCustomizerDialog`. The cart is not changed until the user clicks the
 customizer's add button.
 
-### 5.2 Customizer reset
+### 6.2 Customizer reset
 
 Whenever a different product is opened, the customizer resets to:
 
@@ -312,7 +442,7 @@ Whenever a different product is opened, the customizer resets to:
 - No selected extras
 - `quantity = 1`
 
-### 5.3 Burger patties
+### 6.3 Burger patties
 
 Only burgers expose patty selection.
 
@@ -324,7 +454,7 @@ Only burgers expose patty selection.
 
 The selected patty count is included in the cart customization summary.
 
-### 5.4 Add-ons
+### 6.4 Add-ons
 
 Add-ons are category-specific:
 
@@ -339,7 +469,7 @@ Add-ons are category-specific:
 Each selected add-on contributes its configured USD upcharge to the unit price.
 `no-ice` is allowed and costs $0.00.
 
-### 5.5 Customizer pricing
+### 6.5 Customizer pricing
 
 The customizer calculates:
 
@@ -351,7 +481,7 @@ line total = unit price * quantity
 The displayed amount uses `formatPrice`, so it follows the active locale and
 currency.
 
-### 5.6 Adding customized products
+### 6.6 Adding customized products
 
 Customized products are added through `addCustomizedProduct`. Each customized
 line receives a unique line id and does not merge into an existing product line,
@@ -359,9 +489,9 @@ even if the same base product was already in the cart.
 
 ---
 
-## 6. Cart
+## 7. Cart
 
-### 6.1 Cart line shape
+### 7.1 Cart line shape
 
 Cart lines are stored in `useCartStore.linesById`:
 
@@ -378,7 +508,7 @@ type CartLine = {
 Plain products may use the product id as the line id. Customized products use a
 generated unique line id.
 
-### 6.2 Quantity management
+### 7.2 Quantity management
 
 Quantity actions operate on line id:
 
@@ -387,7 +517,7 @@ Quantity actions operate on line id:
 - If quantity reaches 0, the line is removed.
 - Remove deletes the whole line regardless of quantity.
 
-### 6.3 Cart subtotal
+### 7.3 Cart subtotal
 
 Subtotal is calculated from cart lines, not from the base catalog price:
 
@@ -398,37 +528,37 @@ subtotal = sum(line.unitPriceUsd * line.quantity)
 This is required so customized items include their add-on and patty upcharges.
 No tax, delivery fee, or service fee is added.
 
-### 6.4 Checkout blocking
+### 7.4 Checkout blocking
 
 The "Go to checkout" button is disabled when there are no cart lines.
 
 If the cart has items but there is no valid saved delivery location, clicking
 "Go to checkout" closes the cart drawer and opens the location drawer.
 
-### 6.5 Checkout transition
+### 7.5 Checkout transition
 
 Going to checkout closes the cart drawer, shows the page spinner, waits 750 ms,
 copies the saved delivery ZIP into the checkout ZIP if the checkout field is
 empty, then switches to the checkout view.
 
-### 6.6 Cart badge
+### 7.6 Cart badge
 
 The header cart icon uses a MUI badge. It displays the current total item count,
 including `0`. When the total is zero, the badge is marked `aria-hidden`.
 
-### 6.7 Clearing cart
+### 7.7 Clearing cart
 
 The cart is cleared after a valid order submission, before switching to the
 confirmation view.
 
 ---
 
-## 7. Checkout Validation
+## 8. Checkout Validation
 
 All checkout validation is client-side and runs on form submit. The first
 invalid field receives focus.
 
-### 7.1 Always required
+### 8.1 Always required
 
 | Field | Rule |
 |---|---|
@@ -436,7 +566,7 @@ invalid field receives focus.
 | Email | Must contain `@`, at least one character before it, and a domain containing `.` |
 | ZIP / postal code | Checkout ZIP or saved delivery ZIP must be non-empty |
 
-### 7.2 Card fields
+### 8.2 Card fields
 
 Card fields are required only when `paymentMethod === "card"`.
 
@@ -447,7 +577,7 @@ Card fields are required only when `paymentMethod === "card"`.
 | Expiry | `MM / YY`, month 01-12, not expired |
 | CVC | Exactly 3 or 4 digits; rendered as password input |
 
-### 7.3 Real-time formatting
+### 8.3 Real-time formatting
 
 Card field formatters live in `src/checkout/formatters.ts`.
 
@@ -458,7 +588,7 @@ Card field formatters live in `src/checkout/formatters.ts`.
 | Expiry | Keeps 4 digits max, displays as `MM / YY` |
 | CVC | Keeps 4 digits max |
 
-### 7.4 Payment methods
+### 8.4 Payment methods
 
 Two payment methods exist:
 
@@ -468,7 +598,7 @@ Two payment methods exist:
 Switching to `pay-in-restaurant` immediately clears card-field validation
 errors.
 
-### 7.5 Error display and focus order
+### 8.5 Error display and focus order
 
 Errors are stored in `useCheckoutStore.errors` and displayed as MUI `TextField`
 helper text.
@@ -481,9 +611,9 @@ fullName -> email -> zipCode -> cardNameOnCard -> cardNumber -> cardExpiry -> ca
 
 ---
 
-## 8. Tips and Donations
+## 9. Tips and Donations
 
-### 8.1 Tip presets
+### 9.1 Tip presets
 
 The order summary offers four mutually exclusive tip choices:
 
@@ -500,12 +630,12 @@ Tip amount is calculated from the items subtotal before donation:
 tip amount = subtotal * tipPercent / 100
 ```
 
-### 8.2 Donation beneficiary
+### 9.2 Donation beneficiary
 
 The beneficiary is `Associacao de doacoes Teste` in business meaning, defined in
 code as `DONATION_ASSOCIATION`.
 
-### 8.3 Donation modes
+### 9.3 Donation modes
 
 Only one donation mode can be active at a time:
 
@@ -515,7 +645,7 @@ Only one donation mode can be active at a time:
 
 Default is `none`.
 
-### 8.4 Donation presets
+### 9.4 Donation presets
 
 | Fixed presets | Percent presets |
 |---|---|
@@ -524,7 +654,7 @@ Default is `none`.
 Fixed preset values are stored internally as USD and displayed through
 `formatPrice`.
 
-### 8.5 Custom donation
+### 9.5 Custom donation
 
 Custom fixed donation values are typed in the active display currency and
 converted back to USD with `fromDisplayPrice`.
@@ -535,7 +665,7 @@ converted.
 If the custom value is empty, invalid, or not greater than zero, donation resets
 to `none`.
 
-### 8.6 Grand total
+### 9.6 Grand total
 
 The checkout grand total is:
 
@@ -545,23 +675,28 @@ subtotal + tip amount + donation amount
 
 ---
 
-## 9. Order Placement
+## 10. Order Placement
 
-### 9.1 Delivery data is read-only in checkout
+### 10.1 Delivery data is read-only in checkout
 
 Checkout displays the saved delivery address in disabled fields. The user cannot
 edit delivery from checkout; they must return to the menu and use the location
 drawer.
 
-### 9.2 Successful submission
+### 10.2 Successful submission
 
 When validation passes:
 
 1. `confirmedUserName` is set from the trimmed full name.
-2. The cart is cleared.
-3. The view changes to `confirmation`.
+2. If the user is authenticated, the order is saved to PostgreSQL `orders`.
+3. Authenticated previous orders are refreshed.
+4. The cart is cleared.
+5. The view changes to `confirmation`.
 
-### 9.3 Confirmation page
+Guest checkout follows the same confirmation flow but does not write to
+authenticated order history.
+
+### 10.3 Confirmation page
 
 The confirmation page shows:
 
@@ -576,21 +711,24 @@ The ETA is a demo constant and is not calculated dynamically.
 
 ---
 
-## 10. Navigation and UI State
+## 11. Navigation and UI State
 
-### 10.1 Views
+### 11.1 Views
 
-The app has three views:
+The app has these views:
 
 | View | Meaning |
 |---|---|
 | `shop` | Menu/home screen |
 | `checkout` | Checkout form |
 | `confirmation` | Order confirmation |
+| `login` | Auth login form |
+| `signup` | Account creation with mandatory location |
+| `profile` | Account details and previous orders |
 
 View state lives in `useUiStore.view`.
 
-### 10.2 Header home action
+### 11.2 Header home action
 
 Clicking the header brand:
 
@@ -599,16 +737,16 @@ Clicking the header brand:
 - Closes the location drawer.
 - Navigates to `shop`.
 
-### 10.3 Back to menu from checkout
+### 11.3 Back to menu from checkout
 
 The checkout back button clears checkout validation errors, closes drawers, and
 returns to `shop`.
 
-### 10.4 Confirmation back action
+### 11.4 Confirmation back action
 
 The confirmation page back button returns to `shop`.
 
-### 10.5 Escape key
+### 11.5 Escape key
 
 Escape closes only one surface per key press:
 
@@ -617,32 +755,45 @@ Escape closes only one surface per key press:
 
 Closing the location drawer also clears any pending add product id.
 
-### 10.6 Drawer exclusivity
+### 11.6 Drawer exclusivity
 
 Opening the location drawer closes the cart drawer. Opening the cart drawer
 closes the location drawer.
 
-### 10.7 Toast
+### 11.7 Toast
 
 After a product is added from the customizer, a localized toast appears with the
 product name. Repeated adds increment `toastVersion`, allowing the toast timer
 to restart even if the item name is the same.
 
+### 11.8 Header profile action
+
+The header profile icon routes authenticated users to `profile` and guests to
+`login`.
+
 ---
 
-## 11. Address Geocoding
+## 12. Address Geocoding
 
-### 11.1 API endpoints
+### 12.1 API endpoints
 
 The React app calls:
 
+- `GET /api/content`
 - `GET /api/geocode?postalCode=...&countryCode=...`
 - `GET /api/delivery`
 - `POST /api/delivery`
+- `GET /api/auth/me`
+- `POST /api/auth/login`
+- `POST /api/auth/signup`
+- `POST /api/auth/logout`
+- `PUT /api/auth/profile`
+- `GET /api/orders`
+- `POST /api/orders`
 
 All calls include credentials so the session cookie is preserved.
 
-### 11.2 Providers
+### 12.2 Providers
 
 | Country | Primary | Fallback |
 |---|---|---|
@@ -652,14 +803,14 @@ All calls include credentials so the session cookie is preserved.
 ViaCEP is preferred for Brazil. Nominatim remains keyless and uses a configured
 User-Agent.
 
-### 11.3 Postal code normalization
+### 12.3 Postal code normalization
 
 Server-side postal rules remain:
 
 - Brazil uses 8 digits for lookup and may display as `XXXXX-XXX`.
 - US ZIP+4 is reduced to the first 5 digits.
 
-### 11.4 Lookup result
+### 12.4 Lookup result
 
 A successful lookup applies geocoded fields to the location draft and recomputes
 `storeId`. If the recomputed store id exists, the locale is set from the
@@ -669,9 +820,9 @@ If lookup fails, `lookupError` is shown in the drawer and no delivery is saved.
 
 ---
 
-## 12. Dynamic Translation and Currency
+## 13. Dynamic Translation and Currency
 
-### 12.1 Supported locales
+### 13.1 Supported locales
 
 | Country | Locale | Currency |
 |---|---|---|
@@ -680,7 +831,7 @@ If lookup fails, `lookupError` is shown in the drawer and no delivery is saved.
 
 The default locale is `en-US`.
 
-### 12.2 Locale switching
+### 13.2 Locale switching
 
 The locale switches when a lookup or saved delivery resolves to a country:
 
@@ -690,7 +841,7 @@ The locale switches when a lookup or saved delivery resolves to a country:
 Looking up a city that has no matching store does not save a delivery and should
 not be treated as a valid delivery location.
 
-### 12.3 Translation scope
+### 13.3 Translation scope
 
 User-visible UI strings are routed through `t(key, vars)` for:
 
@@ -704,8 +855,12 @@ User-visible UI strings are routed through `t(key, vars)` for:
 - Location drawer.
 - Header ARIA labels.
 - Toast text.
+- Login, signup, profile, previous orders, and reorder prompt.
 
-### 12.4 Currency formatting
+Translations are loaded from PostgreSQL by `GET /api/content`; `locale.ts`
+stores the active dictionaries but is not the source of translation content.
+
+### 13.4 Currency formatting
 
 Amounts are stored in USD. `formatPrice(usd)` displays:
 
@@ -714,7 +869,7 @@ Amounts are stored in USD. `formatPrice(usd)` displays:
 
 This is a demo conversion, not a live exchange rate.
 
-### 12.5 Display-to-USD conversion
+### 13.5 Display-to-USD conversion
 
 `fromDisplayPrice(localAmount)` converts user-entered local currency back to USD
 for fixed donation input:
@@ -726,14 +881,14 @@ en-US: localAmount
 
 ---
 
-## 13. Automated Test Structure
+## 14. Automated Test Structure
 
-### 13.1 Location
+### 14.1 Location
 
 Playwright specs now live under `playwright/tests`. Shared fixtures and helpers
 live under `playwright/helpers`, and test data lives under `playwright/data`.
 
-### 13.2 Page Object Model
+### 14.2 Page Object Model
 
 The branch added POM classes under `playwright/pages`, including:
 
@@ -746,7 +901,10 @@ The branch added POM classes under `playwright/pages`, including:
 
 New tests should prefer these page objects for reusable flows.
 
-### 13.3 Commands
+Test cases should not keep locators directly in specs when a matching page
+object owns that screen or workflow.
+
+### 14.3 Commands
 
 The package scripts are:
 
@@ -755,6 +913,9 @@ The package scripts are:
   "dev": "vite",
   "server": "node server/index.mjs",
   "dev:all": "concurrently -k \"npm run server\" \"npm run dev\"",
+  "db:migrate": "node database/migrate.mjs",
+  "db:seed": "node database/seed.mjs",
+  "db:setup": "npm run db:migrate && npm run db:seed",
   "build": "tsc && vite build",
   "test": "playwright test",
   "test:ui": "playwright test --ui",
@@ -762,6 +923,22 @@ The package scripts are:
   "test:report": "playwright show-report"
 }
 ```
+
+---
+
+## 15. Reusable MCP and Agent Rules
+
+MCP and reusable agent rules live under `mcps/`:
+
+| Path | Purpose |
+|---|---|
+| `mcps/mcp.json` | IDE-neutral MCP server configuration |
+| `mcps/rules/BUSINESS_RULES.md` | Current app business rules |
+| `mcps/rules/token-saver.mdc` | Concise agent behavior rule |
+| `mcps/rules/token-saver-ptbr.mdc` | Portuguese concise agent behavior rule |
+
+IDE-specific folders such as `.cursor/` and `.vscode/` are not required for the
+shared project configuration.
 
 ---
 

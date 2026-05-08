@@ -1,47 +1,34 @@
 import { useCallback, useEffect, useState } from "react";
 import { Box, Stack, Typography, useMediaQuery } from "@mui/material";
 import { t, type TranslationKey } from "../../i18n/locale";
+import { promos, type PromoContent } from "../../data/promos";
 
-type Promo = {
-  id: string;
+type Promo = PromoContent & {
   headlineKey: TranslationKey;
   sublineKey: TranslationKey;
-  imageSrc: string;
-  /**
-   * `background-position` for the photo. Tweak per-image so the subject
-   * stays on the right while the dark left side keeps copyspace clean.
-   */
-  imagePosition: string;
-  /** Eyebrow line (small uppercase tagline above the headline). */
   eyebrowKey: TranslationKey;
 };
 
-const PROMOS: Promo[] = [
-  {
-    id: "combo",
+const PROMO_TEXT_KEYS: Record<
+  string,
+  Pick<Promo, "eyebrowKey" | "headlineKey" | "sublineKey">
+> = {
+  combo: {
     eyebrowKey: "promoComboEyebrow",
     headlineKey: "promoComboHeadline",
     sublineKey: "promoComboSubline",
-    imageSrc: "/images/promos/promo-combo.jpg",
-    imagePosition: "75% 35%",
   },
-  {
-    id: "spicy",
+  spicy: {
     eyebrowKey: "promoSpicyEyebrow",
     headlineKey: "promoSpicyHeadline",
     sublineKey: "promoSpicySubline",
-    imageSrc: "/images/promos/promo-spicy.jpg",
-    imagePosition: "75% 28%",
   },
-  {
-    id: "delivery",
+  delivery: {
     eyebrowKey: "promoDeliveryEyebrow",
     headlineKey: "promoDeliveryHeadline",
     sublineKey: "promoDeliverySubline",
-    imageSrc: "/images/promos/promo-delivery.jpg",
-    imagePosition: "60% 38%",
   },
-];
+};
 
 const ROTATE_MS = 5500;
 
@@ -53,6 +40,12 @@ const TEXT_MASK =
   "linear-gradient(95deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.6) 25%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0) 78%)";
 
 export function PromoBanner() {
+  const activePromos = promos
+    .map((promo) => {
+      const keys = PROMO_TEXT_KEYS[promo.id];
+      return keys ? { ...promo, ...keys } : null;
+    })
+    .filter((promo): promo is Promo => promo != null);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const prefersReducedMotion = useMediaQuery(
@@ -60,19 +53,23 @@ export function PromoBanner() {
   );
 
   const goTo = useCallback((next: number) => {
-    setIndex(((next % PROMOS.length) + PROMOS.length) % PROMOS.length);
-  }, []);
+    setIndex(((next % activePromos.length) + activePromos.length) % activePromos.length);
+  }, [activePromos.length]);
 
   useEffect(() => {
-    if (paused || prefersReducedMotion) {
+    if (paused || prefersReducedMotion || activePromos.length === 0) {
       return;
     }
     const id = window.setInterval(
-      () => setIndex((p) => (p + 1) % PROMOS.length),
+      () => setIndex((p) => (p + 1) % activePromos.length),
       ROTATE_MS
     );
     return () => window.clearInterval(id);
-  }, [paused, prefersReducedMotion, index]);
+  }, [paused, prefersReducedMotion, activePromos.length]);
+
+  if (activePromos.length === 0) {
+    return null;
+  }
 
   return (
     <Box
@@ -92,7 +89,7 @@ export function PromoBanner() {
         backgroundColor: "#1a1a1a",
       }}
     >
-      {PROMOS.map((promo, i) => (
+      {activePromos.map((promo, i) => (
         <PromoSlide
           key={promo.id}
           promo={promo}
@@ -112,7 +109,7 @@ export function PromoBanner() {
           zIndex: 1,
         }}
       >
-        {PROMOS.map((promo, i) => (
+        {activePromos.map((promo, i) => (
           <Box
             key={promo.id}
             component="button"
@@ -121,7 +118,7 @@ export function PromoBanner() {
             data-testid={`promo-dot-${i}`}
             aria-label={t("promoDotLabel", {
               index: String(i + 1),
-              total: String(PROMOS.length),
+              total: String(activePromos.length),
             })}
             aria-current={i === index ? "true" : undefined}
             sx={{

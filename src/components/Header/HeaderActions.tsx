@@ -1,13 +1,16 @@
 import { Badge, Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnRounded";
+import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 import ShoppingBagRoundedIcon from "@mui/icons-material/ShoppingBagRounded";
 import StorefrontRoundedIcon from "@mui/icons-material/StorefrontRounded";
 import { getStoreDisplayName } from "../../data/stores";
+import { useAuthStore } from "../../stores/authStore";
 import { useCartStore, selectTotalItemCount } from "../../stores/cartStore";
 import {
   selectHasDeliveryLocation,
   useLocationStore,
 } from "../../stores/locationStore";
+import { useUiStore } from "../../stores/uiStore";
 import { t } from "../../i18n/locale";
 
 export function HeaderActions() {
@@ -22,6 +25,8 @@ export function HeaderActions() {
   const located = useLocationStore(selectHasDeliveryLocation);
   const storeId = useLocationStore((s) => s.delivery.storeId);
   const storeName = storeId ? getStoreDisplayName(storeId) : "";
+  const user = useAuthStore((s) => s.user);
+  const setView = useUiStore((s) => s.setView);
 
   const handleToggleLocation = () => {
     if (drawerOpen) {
@@ -35,6 +40,12 @@ export function HeaderActions() {
       closePanel();
     }
     toggleCart();
+  };
+
+  const handleProfile = () => {
+    closeCart();
+    closePanel();
+    setView(user ? "profile" : "login");
   };
 
   return (
@@ -101,6 +112,16 @@ export function HeaderActions() {
           >
             <LocationOnRoundedIcon />
           </Badge>
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={user ? t("authProfile") : t("authLogin")}>
+        <IconButton
+          onClick={handleProfile}
+          data-testid="profile-toggle"
+          aria-label={user ? t("authProfile") : t("authLogin")}
+          sx={{ color: "common.white" }}
+        >
+          <AccountCircleRoundedIcon />
         </IconButton>
       </Tooltip>
       <Tooltip title={drawerOpen ? t("headerCloseCart") : t("headerOpenCart")}>

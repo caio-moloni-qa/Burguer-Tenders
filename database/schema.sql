@@ -34,3 +34,36 @@ CREATE TABLE IF NOT EXISTS promos (
   sort_order integer NOT NULL DEFAULT 0,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS users (
+  id text PRIMARY KEY,
+  email text NOT NULL UNIQUE,
+  password_hash text NOT NULL,
+  first_name text NOT NULL,
+  last_name text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS user_locations (
+  user_id text PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  zip_code text NOT NULL DEFAULT '',
+  country_code text NOT NULL DEFAULT 'US',
+  street_line text NOT NULL DEFAULT '',
+  neighborhood text NOT NULL DEFAULT '',
+  city text NOT NULL DEFAULT '',
+  state text NOT NULL DEFAULT '',
+  country text NOT NULL DEFAULT '',
+  complement text NOT NULL DEFAULT '',
+  store_id text NOT NULL DEFAULT '',
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+  id text PRIMARY KEY,
+  user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ordered_at timestamptz NOT NULL DEFAULT now(),
+  total_usd numeric(10, 2) NOT NULL,
+  delivery jsonb NOT NULL,
+  lines jsonb NOT NULL
+);

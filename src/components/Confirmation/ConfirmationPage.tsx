@@ -83,7 +83,12 @@ export function ConfirmationPage() {
             >
               {t("confirmTitle", { name: userName })}
             </Typography>
-            <Typography variant="body1" color="text.secondary" align="center">
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              align="center"
+              data-testid="confirm-subtitle"
+            >
               {t("confirmSubtitle")}
             </Typography>
             <Chip

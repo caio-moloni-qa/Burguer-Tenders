@@ -10,6 +10,14 @@ import {
 } from "./geocode.mjs";
 import { loadContent } from "./contentRepository.mjs";
 import { lookupViaCep } from "./viacep.mjs";
+import {
+  createOrder,
+  createUser,
+  findUserByEmailAndPassword,
+  getUserById,
+  listOrders,
+  updateUserProfile,
+} from "./authRepository.mjs";
 
 const app = express();
 const sessions = new Map();
@@ -59,6 +67,50 @@ function normalizeDelivery(raw) {
     d.countryCode = raw.countryCode.toUpperCase().slice(0, 2);
   }
   return d;
+}
+
+function setSessionCookie(res, sid) {
+  res.cookie(SESSION_COOKIE, sid, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+}
+
+function getSession(req, res, create = false) {
+  let sid = req.cookies[SESSION_COOKIE];
+  if (!sid && create) {
+    sid = randomUUID();
+    setSessionCookie(res, sid);
+  }
+  if (!sid) {
+    return null;
+  }
+
+  const current = sessions.get(sid);
+  if (current?.delivery || current?.userId != null) {
+    return current;
+  }
+
+  if (current) {
+    const migrated = { delivery: normalizeDelivery(current), userId: "" };
+    sessions.set(sid, migrated);
+    return migrated;
+  }
+
+  if (create) {
+    const next = { delivery: null, userId: "" };
+    sessions.set(sid, next);
+    return next;
+  }
+
+  return null;
+}
+
+function requireUserId(req, res) {
+  const session = getSession(req, res, false);
+  return session?.userId || "";
 }
 
 app.get("/api/health", (_req, res) => {
@@ -183,11 +235,11 @@ app.get("/api/geocode", async (req, res) => {
 });
 
 app.get("/api/delivery", (req, res) => {
-  const sid = req.cookies[SESSION_COOKIE];
-  if (!sid || !sessions.has(sid)) {
+  const session = getSession(req, res, false);
+  if (!session) {
     return res.json({ delivery: null });
   }
-  res.json({ delivery: normalizeDelivery(sessions.get(sid)) });
+  res.json({ delivery: normalizeDelivery(session.delivery) });
 });
 
 app.post("/api/delivery", (req, res) => {
@@ -195,17 +247,6 @@ app.post("/api/delivery", (req, res) => {
   const zipCode = typeof body.zipCode === "string" ? body.zipCode.trim() : "";
   if (!zipCode) {
     return res.status(400).json({ error: "ZIP / postal code is required" });
-  }
-
-  let sid = req.cookies[SESSION_COOKIE];
-  if (!sid) {
-    sid = randomUUID();
-    res.cookie(SESSION_COOKIE, sid, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
   }
 
   const cc =
@@ -226,8 +267,142 @@ app.post("/api/delivery", (req, res) => {
       typeof body.storeId === "string" ? body.storeId.trim().slice(0, 64) : "",
   };
 
-  sessions.set(sid, payload);
+  const session = getSession(req, res, true);
+  session.delivery = payload;
   res.json({ delivery: payload });
+});
+
+app.get("/api/auth/me", async (req, res) => {
+  try {
+    const userId = requireUserId(req, res);
+    if (!userId) {
+      return res.json({ user: null });
+    }
+    const user = await getUserById(userId);
+    res.json({ user });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Unable to load user";
+    res.status(503).json({ error: msg });
+  }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  const body = req.body || {};
+  const email = typeof body.email === "string" ? body.email.trim() : "";
+  const password = typeof body.password === "string" ? body.password : "";
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+
+  try {
+    const user = await findUserByEmailAndPassword(email, password);
+    if (!user) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+    const session = getSession(req, res, true);
+    session.userId = user.id;
+    if (user.location) {
+      session.delivery = user.location;
+    }
+    res.json({ user });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Login failed";
+    res.status(503).json({ error: msg });
+  }
+});
+
+app.post("/api/auth/signup", async (req, res) => {
+  const body = req.body || {};
+  const firstName = typeof body.firstName === "string" ? body.firstName.trim() : "";
+  const lastName = typeof body.lastName === "string" ? body.lastName.trim() : "";
+  const email = typeof body.email === "string" ? body.email.trim() : "";
+  const password = typeof body.password === "string" ? body.password : "";
+  const location = normalizeDelivery(body.location);
+
+  if (!firstName || !lastName || !email || !password) {
+    return res.status(400).json({ error: "All signup fields are required" });
+  }
+  if (!email.includes("@") || !email.split("@")[1]?.includes(".")) {
+    return res.status(400).json({ error: "Enter a valid email address" });
+  }
+  if (password.length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters" });
+  }
+  if (!location?.zipCode || !location.storeId) {
+    return res.status(400).json({ error: "A deliverable location is required" });
+  }
+
+  try {
+    const user = await createUser({ firstName, lastName, email, password, location });
+    const session = getSession(req, res, true);
+    session.userId = user.id;
+    session.delivery = location;
+    res.status(201).json({ user });
+  } catch (e) {
+    if (e?.code === "23505") {
+      return res.status(409).json({ error: "An account already exists for this email" });
+    }
+    const msg = e instanceof Error ? e.message : "Signup failed";
+    res.status(503).json({ error: msg });
+  }
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  const session = getSession(req, res, false);
+  if (session) {
+    session.userId = "";
+  }
+  res.json({ ok: true });
+});
+
+app.put("/api/auth/profile", async (req, res) => {
+  const userId = requireUserId(req, res);
+  if (!userId) {
+    return res.status(401).json({ error: "Login required" });
+  }
+
+  try {
+    const user = await updateUserProfile(userId, req.body || {});
+    const session = getSession(req, res, true);
+    session.userId = user.id;
+    if (user.location) {
+      session.delivery = user.location;
+    }
+    res.json({ user });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Profile update failed";
+    res.status(503).json({ error: msg });
+  }
+});
+
+app.get("/api/orders", async (req, res) => {
+  const userId = requireUserId(req, res);
+  if (!userId) {
+    return res.status(401).json({ error: "Login required" });
+  }
+
+  try {
+    const orders = await listOrders(userId);
+    res.json({ orders });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Unable to load orders";
+    res.status(503).json({ error: msg });
+  }
+});
+
+app.post("/api/orders", async (req, res) => {
+  const userId = requireUserId(req, res);
+  if (!userId) {
+    return res.status(401).json({ error: "Login required" });
+  }
+
+  try {
+    const id = await createOrder(userId, req.body || {});
+    res.json({ id });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Unable to save order";
+    res.status(503).json({ error: msg });
+  }
 });
 
 app.listen(PORT, () => {

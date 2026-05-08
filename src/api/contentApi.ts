@@ -1,4 +1,5 @@
 import { setProducts } from "../data/products";
+import { setPromos, type PromoContent } from "../data/promos";
 import {
   setTranslationDictionaries,
   type Locale,
@@ -9,6 +10,7 @@ import type { Product } from "../types/product";
 type ContentPayload = {
   translations: Partial<Record<Locale, Partial<Record<TranslationKey, string>>>>;
   products: Product[];
+  promos: PromoContent[];
 };
 
 export async function hydrateContentFromDatabase(): Promise<void> {
@@ -20,4 +22,5 @@ export async function hydrateContentFromDatabase(): Promise<void> {
   const payload = (await response.json()) as ContentPayload;
   setTranslationDictionaries(payload.translations);
   setProducts(payload.products);
+  setPromos(payload.promos);
 }

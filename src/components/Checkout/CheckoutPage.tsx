@@ -2,7 +2,13 @@ import type { FormEvent } from "react";
 import { Button, Container, Stack, Typography } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import LockRoundedIcon from "@mui/icons-material/LockRounded";
-import { useCartStore } from "../../stores/cartStore";
+import { fetchPreviousOrders, saveOrder } from "../../api/authApi";
+import { useAuthStore } from "../../stores/authStore";
+import {
+  getCartLines,
+  selectSubtotal,
+  useCartStore,
+} from "../../stores/cartStore";
 import { useCheckoutStore } from "../../stores/checkoutStore";
 import { useLocationStore } from "../../stores/locationStore";
 import { useUiStore } from "../../stores/uiStore";
@@ -20,8 +26,13 @@ import { PersonalDetailsSection } from "./PersonalDetailsSection";
 export function CheckoutPage() {
   const setView = useUiStore((s) => s.setView);
   const clearCart = useCartStore((s) => s.clear);
+  const linesById = useCartStore((s) => s.linesById);
+  const subtotal = useCartStore(selectSubtotal);
+  const user = useAuthStore((s) => s.user);
+  const setOrders = useAuthStore((s) => s.setOrders);
   const closeCart = useCartStore((s) => s.closeDrawer);
   const closePanel = useLocationStore((s) => s.closePanel);
+  const delivery = useLocationStore((s) => s.delivery);
   const savedZip = useLocationStore((s) => s.delivery.zipCode);
 
   const form = useCheckoutStore((s) => s.form);
@@ -36,7 +47,7 @@ export function CheckoutPage() {
     setView("shop");
   };
 
-  const handleSubmit = (ev: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
     const result = validateCheckout(form, savedZip);
     if (!result.valid) {
@@ -53,6 +64,17 @@ export function CheckoutPage() {
     }
 
     setConfirmedUserName(form.fullName.trim());
+    if (user) {
+      const lines = getCartLines(linesById).map((line) => ({
+        productId: line.productId,
+        quantity: line.quantity,
+        unitPriceUsd: line.unitPriceUsd,
+        customizationSummary: line.customizationSummary,
+      }));
+      await saveOrder({ totalUsd: subtotal, delivery, lines });
+      const nextOrders = await fetchPreviousOrders();
+      setOrders(nextOrders);
+    }
     clearCart();
     setView("confirmation");
   };
