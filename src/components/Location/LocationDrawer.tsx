@@ -44,6 +44,7 @@ export function LocationDrawer() {
   const pendingAddProductId = useUiStore((s) => s.pendingAddProductId);
   const setPendingAddProductId = useUiStore((s) => s.setPendingAddProductId);
   const openCustomizer = useUiStore((s) => s.openCustomizer);
+  const bumpLocaleVersion = useUiStore((s) => s.bumpLocaleVersion);
 
   const [saveReleased, setSaveReleased] = useState(true);
 
@@ -73,6 +74,7 @@ export function LocationDrawer() {
       const nextStoreId = useLocationStore.getState().delivery.storeId;
       if (nextStoreId) {
         setLocale(delivery.countryCode);
+        bumpLocaleVersion();
       }
     } catch (err) {
       setLookupError(err instanceof Error ? err.message : "Address lookup failed");
@@ -83,9 +85,7 @@ export function LocationDrawer() {
 
   const handleSave = async () => {
     if (!delivery.storeId.trim()) {
-      window.alert(
-        "We don't deliver to this address yet. Use a ZIP in an area we serve — e.g. Londrina (PR), São Paulo (SP), Brazil, or New York (NY), USA — then look up your address before saving."
-      );
+      window.alert(t("locationStoreRequired"));
       return;
     }
     try {
@@ -97,7 +97,7 @@ export function LocationDrawer() {
         setPendingAddProductId(null);
       }
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Could not save location");
+      window.alert(err instanceof Error ? err.message : t("locationSaveError"));
     }
   };
 

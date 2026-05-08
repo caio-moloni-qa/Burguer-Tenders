@@ -7,6 +7,8 @@ export class MenuPage {
   readonly productGrid: Locator;
   readonly productCards: Locator;
   readonly productImages: Locator;
+  readonly categoryFilter: Locator;
+  readonly promoBanner: Locator;
   readonly searchToggle: Locator;
   readonly searchInput: Locator;
   readonly searchClose: Locator;
@@ -16,6 +18,8 @@ export class MenuPage {
     this.productGrid = page.getByTestId("product-grid");
     this.productCards = this.productGrid.locator(".product-card");
     this.productImages = this.productGrid.getByTestId("product-image");
+    this.categoryFilter = page.getByTestId("menu-category-filter");
+    this.promoBanner = page.getByTestId("promo-banner");
     this.searchToggle = page.getByTestId("menu-search-toggle");
     this.searchInput = page.getByTestId("menu-search");
     this.searchClose = page.getByTestId("menu-search-close");
@@ -49,12 +53,24 @@ export class MenuPage {
     return card.locator(".product-card__price");
   }
 
+  productPrices(): Locator {
+    return this.productGrid.locator(".product-card__price");
+  }
+
   productImage(card: Locator): Locator {
     return card.getByTestId("product-image");
   }
 
   productBadge(productId: string): Locator {
     return this.productCard(productId).locator(".product-card__badge");
+  }
+
+  promoSlide(promoId: string): Locator {
+    return this.page.getByTestId(`promo-slide-${promoId}`);
+  }
+
+  async allProductPricesText(): Promise<string[]> {
+    return this.productPrices().allTextContents();
   }
 
   async addProduct(productId: string): Promise<void> {

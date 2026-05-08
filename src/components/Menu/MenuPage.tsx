@@ -7,11 +7,12 @@ import { CategoryFilter } from "./CategoryFilter";
 import { MenuSearch } from "./MenuSearch";
 import { ProductCard } from "./ProductCard";
 import { PromoBanner } from "./PromoBanner";
-import { t } from "../../i18n/locale";
+import { localizedProductDescription, productName, t } from "../../i18n/locale";
 
 export function MenuPage() {
   const activeFilter = useUiStore((s) => s.menuFilter);
   const search = useUiStore((s) => s.menuSearch);
+  const localeVersion = useUiStore((s) => s.localeVersion);
 
   const filtered = useMemo(() => {
     const byCategory =
@@ -23,10 +24,10 @@ export function MenuPage() {
     }
     return byCategory.filter(
       (p) =>
-        p.name.toLowerCase().includes(search) ||
-        p.description.toLowerCase().includes(search)
+        productName(p).toLowerCase().includes(search) ||
+        localizedProductDescription(p).toLowerCase().includes(search)
     );
-  }, [activeFilter, search]);
+  }, [activeFilter, search, localeVersion]);
 
   return (
     <>

@@ -19,7 +19,7 @@ import {
   useCheckoutStore,
 } from "../../stores/checkoutStore";
 import { getProductById } from "../../data/products";
-import { formatPrice, t } from "../../i18n/locale";
+import { formatPrice, productShortName, t } from "../../i18n/locale";
 import { DonationSection } from "./DonationSection";
 
 const TIP_OPTIONS: TipPercent[] = [0, 10, 15, 20];
@@ -69,7 +69,7 @@ export function OrderSummary() {
                     sx={{ justifyContent: "space-between" }}
                   >
                     <Typography variant="body2">
-                      {product.shortName} x {line.quantity}
+                      {productShortName(product)} x {line.quantity}
                     </Typography>
                     <Typography variant="body2">
                       {formatPrice(line.unitPriceUsd * line.quantity)}

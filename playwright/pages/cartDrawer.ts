@@ -2,6 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 
 export class CartDrawer {
   readonly drawer: Locator;
+  readonly title: Locator;
   readonly emptyState: Locator;
   readonly lines: Locator;
   readonly subtotal: Locator;
@@ -10,11 +11,12 @@ export class CartDrawer {
 
   constructor(private readonly page: Page) {
     this.drawer = page.getByTestId("cart-drawer");
+    this.title = page.locator("#cart-drawer-title");
     this.emptyState = page.getByTestId("cart-empty");
     this.lines = page.getByTestId("cart-lines");
     this.subtotal = page.getByTestId("cart-subtotal");
     this.goCheckout = page.getByTestId("go-checkout");
-    this.closeButton = page.locator('[data-action="close-cart"]').first();
+    this.closeButton = page.locator('button[data-action="close-cart"]');
   }
 
   lineTotal(): Locator {

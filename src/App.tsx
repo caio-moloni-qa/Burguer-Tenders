@@ -1,7 +1,9 @@
 import { useCallback } from "react";
+import { Backdrop, CircularProgress } from "@mui/material";
 import { useCartStore } from "./stores/cartStore";
 import { useLocationStore } from "./stores/locationStore";
 import { useUiStore } from "./stores/uiStore";
+import { useContentBootstrap } from "./hooks/useContentBootstrap";
 import { useEscapeKey } from "./hooks/useEscapeKey";
 import { useInitialDelivery } from "./hooks/useInitialDelivery";
 import { CartDrawer } from "./components/Cart/CartDrawer";
@@ -14,7 +16,9 @@ import { PageSpinner } from "./components/feedback/PageSpinner";
 import { Toast } from "./components/feedback/Toast";
 
 export function App() {
+  const contentReady = useContentBootstrap();
   const view = useUiStore((s) => s.view);
+  useUiStore((s) => s.localeVersion);
 
   const cartOpen = useCartStore((s) => s.drawerOpen);
   const closeCart = useCartStore((s) => s.closeDrawer);
@@ -39,6 +43,23 @@ export function App() {
   }, [panelOpen, cartOpen, closePanel, closeCart, setPendingAddProductId]);
 
   useEscapeKey(handleEscape);
+
+  if (!contentReady) {
+    return (
+      <Backdrop
+        open
+        aria-label="Loading content"
+        sx={{
+          color: "primary.contrastText",
+          zIndex: (theme) => theme.zIndex.modal + 10,
+          backgroundColor: "rgba(8, 5, 3, 0.74)",
+          backdropFilter: "blur(2px)",
+        }}
+      >
+        <CircularProgress color="secondary" thickness={4.5} size={56} />
+      </Backdrop>
+    );
+  }
 
   return (
     <>

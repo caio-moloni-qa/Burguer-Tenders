@@ -18,12 +18,19 @@ import {
   useLocationStore,
 } from "../../stores/locationStore";
 import { useUiStore } from "../../stores/uiStore";
-import { formatPrice, t } from "../../i18n/locale";
+import {
+  formatPrice,
+  localizedProductDescription,
+  productName,
+  t,
+} from "../../i18n/locale";
 import type { Product } from "../../types/product";
 
 type Props = {
   product: Product;
 };
+
+const CALORIE_METER_MAX = 1200;
 
 export function ProductCard({ product }: Props) {
   const located = useLocationStore(selectHasDeliveryLocation);
@@ -32,6 +39,11 @@ export function ProductCard({ product }: Props) {
   const openPanel = useLocationStore((s) => s.openPanel);
   const setPendingAddProductId = useUiStore((s) => s.setPendingAddProductId);
   const openCustomizer = useUiStore((s) => s.openCustomizer);
+  const name = productName(product);
+  const caloriesPercent = Math.min(
+    100,
+    Math.round((product.caloriesKcal / CALORIE_METER_MAX) * 100)
+  );
 
   const handleAddToCart = () => {
     if (!located) {
@@ -70,7 +82,7 @@ export function ProductCard({ product }: Props) {
         <CardMedia
           component="img"
           src={product.imageSrc}
-          alt={product.name}
+          alt={name}
           loading="lazy"
           data-testid="product-image"
           sx={{ width: "100%", height: "100%", objectFit: "cover" }}
@@ -100,11 +112,56 @@ export function ProductCard({ product }: Props) {
             component="h2"
             sx={{ lineHeight: 1.25 }}
           >
-            {product.name}
+            {name}
           </Typography>
           <Typography className="product-card__desc" variant="body2" color="text.secondary">
-            {product.description}
+            {localizedProductDescription(product)}
           </Typography>
+          <Box className="product-card__calories" sx={{ pt: 0.25 }}>
+            <Stack
+              direction="row"
+              sx={{
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 0.5,
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                {t("caloriesLabel")}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 700, color: "secondary.main" }}
+              >
+                {t("caloriesValue", {
+                  calories: String(product.caloriesKcal),
+                })}
+              </Typography>
+            </Stack>
+            <Box
+              role="meter"
+              aria-label={`${name} ${t("caloriesLabel")}`}
+              aria-valuemin={0}
+              aria-valuemax={CALORIE_METER_MAX}
+              aria-valuenow={product.caloriesKcal}
+              sx={{
+                height: 8,
+                overflow: "hidden",
+                borderRadius: 999,
+                bgcolor: "rgba(246, 196, 83, 0.16)",
+              }}
+            >
+              <Box
+                sx={{
+                  width: `${caloriesPercent}%`,
+                  height: "100%",
+                  borderRadius: "inherit",
+                  background:
+                    "linear-gradient(90deg, #5fbf7a 0%, #f6c453 58%, #c77738 100%)",
+                }}
+              />
+            </Box>
+          </Box>
           <Typography
             className="product-card__price"
             variant="h6"

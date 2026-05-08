@@ -8,6 +8,7 @@ import {
   normalizePostalForLookup,
   parseAddressFromNominatim,
 } from "./geocode.mjs";
+import { loadContent } from "./contentRepository.mjs";
 import { lookupViaCep } from "./viacep.mjs";
 
 const app = express();
@@ -62,6 +63,16 @@ function normalizeDelivery(raw) {
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+app.get("/api/content", async (_req, res) => {
+  try {
+    const content = await loadContent();
+    res.json(content);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Content database failed";
+    res.status(503).json({ error: msg });
+  }
 });
 
 async function nominatimSearch(params) {

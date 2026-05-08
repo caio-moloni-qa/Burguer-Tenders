@@ -1,4 +1,5 @@
 import type { CheckoutForm } from "../stores/checkoutStore";
+import { t } from "../i18n/locale";
 
 export type CheckoutValidationResult = {
   valid: boolean;
@@ -59,43 +60,43 @@ export function validateCheckout(
   const errors: Record<string, string> = {};
 
   if (!f.fullName.trim()) {
-    errors.fullName = "Name is required.";
+    errors.fullName = t("checkoutErrorNameRequired");
   }
   if (!f.email.trim()) {
-    errors.email = "Email is required.";
+    errors.email = t("checkoutErrorEmailRequired");
   } else if (!isValidEmail(f.email)) {
-    errors.email = "Enter a valid email address.";
+    errors.email = t("checkoutErrorEmailInvalid");
   }
 
   const zip = f.zipCode.trim() || fallbackZip.trim();
   if (!zip) {
-    errors.zipCode = "ZIP / postal code is required.";
+    errors.zipCode = t("checkoutErrorZipRequired");
   }
 
   if (f.paymentMethod === "card") {
     if (!f.cardNameOnCard.trim()) {
-      errors.cardNameOnCard = "Name on card is required.";
+      errors.cardNameOnCard = t("checkoutErrorCardNameRequired");
     } else if (!isValidCardName(f.cardNameOnCard)) {
-      errors.cardNameOnCard = "Name on card must contain only letters and spaces.";
+      errors.cardNameOnCard = t("checkoutErrorCardNameInvalid");
     }
 
     const rawNumber = f.cardNumber.replace(/\s/g, "");
     if (!rawNumber) {
-      errors.cardNumber = "Card number is required.";
+      errors.cardNumber = t("checkoutErrorCardNumberRequired");
     } else if (!isValidCardNumber(f.cardNumber)) {
-      errors.cardNumber = "Enter a valid card number (13–19 digits).";
+      errors.cardNumber = t("checkoutErrorCardNumberInvalid");
     }
 
     if (!f.cardExpiry.trim()) {
-      errors.cardExpiry = "Expiry date is required.";
+      errors.cardExpiry = t("checkoutErrorExpiryRequired");
     } else if (!isValidExpiry(f.cardExpiry)) {
-      errors.cardExpiry = "Enter a valid expiry date (MM / YY) that hasn't passed.";
+      errors.cardExpiry = t("checkoutErrorExpiryInvalid");
     }
 
     if (!f.cardCvc.trim()) {
-      errors.cardCvc = "Security code is required.";
+      errors.cardCvc = t("checkoutErrorCvcRequired");
     } else if (!isValidCvc(f.cardCvc)) {
-      errors.cardCvc = "Security code must be 3 or 4 digits.";
+      errors.cardCvc = t("checkoutErrorCvcInvalid");
     }
   }
 

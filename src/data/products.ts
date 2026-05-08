@@ -2,9 +2,9 @@ import type { Product } from "../types/product";
 
 /**
  * BeeTee's catalog of items available to buy.
- * Single source of truth for the storefront until a backend exists.
+ * Fallback storefront data. Runtime content is hydrated from the API/database.
  */
-export const products: readonly Product[] = [
+export let products: readonly Product[] = [
   /* ── Burgers ────────────────────────────────────────────────── */
   {
     id: "cheeseburguer",
@@ -14,6 +14,7 @@ export const products: readonly Product[] = [
       "Beef patty, melted cheese, pickles, onions, ketchup, and mustard on a toasted bun.",
     imageSrc: "/images/products/cheeseburguer.png",
     priceUsd: 3.49,
+    caloriesKcal: 420,
     category: "burger",
     spicy: false,
   },
@@ -25,6 +26,7 @@ export const products: readonly Product[] = [
       "Our classic cheeseburguer with crispy bacon and creamy mayo on a toasted bun.",
     imageSrc: "/images/products/cheeseburguer-bacon.png",
     priceUsd: 4.99,
+    caloriesKcal: 560,
     category: "burger",
     spicy: false,
   },
@@ -36,6 +38,7 @@ export const products: readonly Product[] = [
       "Fresh avocado spread, beef patty, lettuce, tomato, and a tangy lime aioli on a brioche bun.",
     imageSrc: "/images/products/avocado-burger.png",
     priceUsd: 6.49,
+    caloriesKcal: 610,
     category: "burger",
     spicy: false,
   },
@@ -47,6 +50,7 @@ export const products: readonly Product[] = [
       "Cheeseburguer topped with a fried egg and our signature gochujang sauce — bold heat that builds.",
     imageSrc: "/images/products/bt-special.png",
     priceUsd: 7.49,
+    caloriesKcal: 720,
     category: "burger",
     spicy: true,
   },
@@ -60,6 +64,7 @@ export const products: readonly Product[] = [
       "Six golden chicken tenders with your choice of dipping sauce.",
     imageSrc: "/images/products/pack-tenders.png",
     priceUsd: 6.99,
+    caloriesKcal: 590,
     category: "tenders",
     spicy: false,
   },
@@ -71,6 +76,7 @@ export const products: readonly Product[] = [
       "Six spicy breaded chicken tenders with heat that builds dip included.",
     imageSrc: "/images/products/pack-tenders-spicy.png",
     priceUsd: 7.49,
+    caloriesKcal: 640,
     category: "tenders",
     spicy: true,
   },
@@ -84,6 +90,7 @@ export const products: readonly Product[] = [
       "Four golden tenders and a classic cheeseburguer — the best of both worlds, served together.",
     imageSrc: "/images/products/combo-tenders-cheeseburguer.png",
     priceUsd: 9.99,
+    caloriesKcal: 920,
     category: "combo",
     spicy: false,
   },
@@ -95,6 +102,7 @@ export const products: readonly Product[] = [
       "Our crispy-bacon cheeseburguer paired with a generous serving of our golden plain fries.",
     imageSrc: "/images/products/combo-bacon-fries.png",
     priceUsd: 8.49,
+    caloriesKcal: 1040,
     category: "combo",
     spicy: false,
   },
@@ -106,6 +114,7 @@ export const products: readonly Product[] = [
       "Six fiery spicy tenders balanced with a thick, creamy chocolate milkshake. Fire meets chill.",
     imageSrc: "/images/products/combo-spicy-milkshake.png",
     priceUsd: 10.49,
+    caloriesKcal: 1120,
     category: "combo",
     spicy: true,
   },
@@ -117,6 +126,7 @@ export const products: readonly Product[] = [
       "Six golden tenders with any fountain drink of your choice. Simple, satisfying, every time.",
     imageSrc: "/images/products/combo-tenders-drink.png",
     priceUsd: 8.99,
+    caloriesKcal: 820,
     category: "combo",
     spicy: false,
   },
@@ -130,6 +140,7 @@ export const products: readonly Product[] = [
       "Our house Coke-based specialty soda with a secret twist. Refreshing, sweet, and totally addictive.",
     imageSrc: "/images/products/doctor-bt.png",
     priceUsd: 2.99,
+    caloriesKcal: 180,
     category: "drink",
     spicy: false,
   },
@@ -141,6 +152,7 @@ export const products: readonly Product[] = [
       "Classic Brazilian guaraná soda — lightly sweet, fruity, and perfectly fizzy. A taste of Brazil.",
     imageSrc: "/images/products/guarana.png",
     priceUsd: 2.99,
+    caloriesKcal: 140,
     category: "drink",
     spicy: false,
   },
@@ -154,6 +166,7 @@ export const products: readonly Product[] = [
       "Crispy golden fries, lightly salted. Classic and always the right call.",
     imageSrc: "/images/products/fries-plain.png",
     priceUsd: 3.49,
+    caloriesKcal: 360,
     category: "side",
     spicy: false,
   },
@@ -165,6 +178,7 @@ export const products: readonly Product[] = [
       "Golden fries tossed in a bright lemon-pepper seasoning. Zesty, savory, impossible to stop eating.",
     imageSrc: "/images/products/fries-lemon-pepper.png",
     priceUsd: 3.99,
+    caloriesKcal: 390,
     category: "side",
     spicy: false,
   },
@@ -176,6 +190,7 @@ export const products: readonly Product[] = [
       "Thick and creamy hand-spun chocolate milkshake made with real cocoa. Served ice cold.",
     imageSrc: "/images/products/milkshake-chocolate.png",
     priceUsd: 4.49,
+    caloriesKcal: 520,
     category: "side",
     spicy: false,
   },
@@ -187,6 +202,7 @@ export const products: readonly Product[] = [
       "Hand-spun strawberry milkshake bursting with fresh berry flavor. Sweet, pink, and perfect.",
     imageSrc: "/images/products/milkshake-strawberry.png",
     priceUsd: 4.49,
+    caloriesKcal: 480,
     category: "side",
     spicy: false,
   },
@@ -194,4 +210,8 @@ export const products: readonly Product[] = [
 
 export function getProductById(id: string): Product | undefined {
   return products.find((p) => p.id === id);
+}
+
+export function setProducts(nextProducts: readonly Product[]): void {
+  products = nextProducts;
 }

@@ -21,7 +21,13 @@ import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";
 import { getProductById } from "../../data/products";
 import { useCartStore } from "../../stores/cartStore";
 import { useUiStore } from "../../stores/uiStore";
-import { formatPrice, t, type TranslationKey } from "../../i18n/locale";
+import {
+  formatPrice,
+  productName,
+  productShortName,
+  t,
+  type TranslationKey,
+} from "../../i18n/locale";
 import type { Product } from "../../types/product";
 
 type ExtraOption = {
@@ -83,6 +89,8 @@ export function ItemCustomizerDialog() {
   const addCustomizedProduct = useCartStore((s) => s.addCustomizedProduct);
 
   const product = productId ? getProductById(productId) : undefined;
+  const name = product ? productName(product) : "";
+  const shortName = product ? productShortName(product) : "";
   const [pattyCount, setPattyCount] = useState(1);
   const [selectedExtras, setSelectedExtras] = useState<Record<string, boolean>>({});
   const [quantity, setQuantity] = useState(1);
@@ -138,7 +146,7 @@ export function ItemCustomizerDialog() {
       unitPriceUsd: unitPrice,
       customizationSummary: summary,
     });
-    showToast(product.name);
+    showToast(name);
     closeCustomizer();
   };
 
@@ -161,7 +169,7 @@ export function ItemCustomizerDialog() {
     >
       <DialogTitle sx={{ pr: 7 }}>
         <Typography variant="h6" component="span" sx={{ fontWeight: 700 }}>
-          {t("customizerTitle", { item: product?.shortName ?? "" })}
+          {t("customizerTitle", { item: shortName })}
         </Typography>
         <IconButton
           aria-label={t("customizerClose")}
@@ -189,7 +197,7 @@ export function ItemCustomizerDialog() {
               />
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  {product.name}
+                  {name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {t("customizerBasePrice", {

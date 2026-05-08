@@ -11,7 +11,7 @@ import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import type { CartLine as CartLineType } from "../../stores/cartStore";
 import { useCartStore } from "../../stores/cartStore";
 import { getProductById } from "../../data/products";
-import { formatPrice, t } from "../../i18n/locale";
+import { formatPrice, productShortName, t } from "../../i18n/locale";
 
 type Props = {
   line: CartLineType;
@@ -27,6 +27,7 @@ export function CartLine({ line }: Props) {
   }
 
   const lineTotal = line.unitPriceUsd * line.quantity;
+  const shortName = productShortName(product);
 
   return (
     <ListItem
@@ -50,7 +51,7 @@ export function CartLine({ line }: Props) {
       >
         <Box sx={{ minWidth: 0, pr: 1 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-            {product.shortName}
+            {shortName}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             {formatPrice(line.unitPriceUsd)} {t("cartEach")}
@@ -80,7 +81,7 @@ export function CartLine({ line }: Props) {
           onClick={() => setQuantity(line.id, line.quantity - 1)}
           data-action="dec-line"
           data-product-id={line.productId}
-          aria-label={`Decrease ${product.shortName}`}
+          aria-label={t("cartDecrease", { item: shortName })}
           sx={{
             border: "1px solid",
             borderColor: "divider",
@@ -101,7 +102,7 @@ export function CartLine({ line }: Props) {
           onClick={() => setQuantity(line.id, line.quantity + 1)}
           data-action="inc-line"
           data-product-id={line.productId}
-          aria-label={`Increase ${product.shortName}`}
+          aria-label={t("cartIncrease", { item: shortName })}
           sx={{
             border: "1px solid",
             borderColor: "divider",
@@ -117,7 +118,7 @@ export function CartLine({ line }: Props) {
           onClick={() => removeLine(line.id)}
           data-action="remove-line"
           data-product-id={line.productId}
-          aria-label={`${t("cartRemove")} ${product.shortName}`}
+          aria-label={`${t("cartRemove")} ${shortName}`}
         >
           <DeleteOutlineRoundedIcon fontSize="small" />
         </IconButton>
