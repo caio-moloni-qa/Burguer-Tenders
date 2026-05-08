@@ -25,8 +25,8 @@ import { DonationSection } from "./DonationSection";
 const TIP_OPTIONS: TipPercent[] = [0, 10, 15, 20];
 
 export function OrderSummary() {
-  const quantities = useCartStore((s) => s.quantities);
-  const lines = useMemo(() => getCartLines(quantities), [quantities]);
+  const linesById = useCartStore((s) => s.linesById);
+  const lines = useMemo(() => getCartLines(linesById), [linesById]);
   const subtotal = useCartStore(selectSubtotal);
   const f = useCheckoutStore((s) => s.form);
   const setField = useCheckoutStore((s) => s.setField);
@@ -63,18 +63,28 @@ export function OrderSummary() {
                 return null;
               }
               return (
-                <Stack
-                  key={line.productId}
-                  direction="row"
-                  sx={{ justifyContent: "space-between" }}
-                >
-                  <Typography variant="body2">
-                    {product.shortName} × {line.quantity}
-                  </Typography>
-                  <Typography variant="body2">
-                    {formatPrice(product.priceUsd * line.quantity)}
-                  </Typography>
-                </Stack>
+                <Box key={line.id}>
+                  <Stack
+                    direction="row"
+                    sx={{ justifyContent: "space-between" }}
+                  >
+                    <Typography variant="body2">
+                      {product.shortName} x {line.quantity}
+                    </Typography>
+                    <Typography variant="body2">
+                      {formatPrice(line.unitPriceUsd * line.quantity)}
+                    </Typography>
+                  </Stack>
+                  {line.customizationSummary.length > 0 && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", maxWidth: "38rem" }}
+                    >
+                      {line.customizationSummary.join(", ")}
+                    </Typography>
+                  )}
+                </Box>
               );
             })}
           </Stack>

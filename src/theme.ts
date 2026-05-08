@@ -2,33 +2,45 @@ import { createTheme } from "@mui/material/styles";
 import { red } from "@mui/material/colors";
 
 /**
- * Burguer-Tenders theme — McDonald's-adjacent palette (red, yellow, white)
- * with Inter as the typeface and slightly rounded corners across the app.
+ * BeeTee's theme: late-night espresso surfaces with copper and amber
+ * accents. The promo photos carry the bright food color; app chrome stays dark.
  */
 export const theme = createTheme({
   palette: {
-    mode: "light",
+    mode: "dark",
     primary: {
-      main: "#da291c",
-      dark: "#b71c1c",
-      contrastText: "#ffffff",
+      main: "#c77738",
+      dark: "#8f461d",
+      light: "#e0a15f",
+      contrastText: "#140b07",
     },
     secondary: {
-      main: "#ffc300",
-      dark: "#ffb300",
-      contrastText: "#1a1a1a",
+      main: "#f6c453",
+      dark: "#bd8127",
+      contrastText: "#160d08",
     },
     error: {
       main: red[700],
     },
+    success: {
+      main: "#5fbf7a",
+      dark: "#36794a",
+      contrastText: "#061009",
+    },
+    info: {
+      main: "#d69a55",
+      dark: "#8b562a",
+      contrastText: "#140b07",
+    },
     background: {
-      default: "#fafafa",
-      paper: "#ffffff",
+      default: "#0f0a07",
+      paper: "#1b120d",
     },
     text: {
-      primary: "#1a1a1a",
-      secondary: "#555555",
+      primary: "#f7efe7",
+      secondary: "#cdb9a7",
     },
+    divider: "rgba(246, 196, 83, 0.16)",
   },
   typography: {
     fontFamily:
@@ -36,9 +48,9 @@ export const theme = createTheme({
     fontWeightRegular: 400,
     fontWeightMedium: 500,
     fontWeightBold: 700,
-    h1: { fontWeight: 700, letterSpacing: "-0.02em" },
-    h2: { fontWeight: 700, letterSpacing: "-0.02em" },
-    h3: { fontWeight: 600, letterSpacing: "-0.015em" },
+    h1: { fontWeight: 700, letterSpacing: 0 },
+    h2: { fontWeight: 700, letterSpacing: 0 },
+    h3: { fontWeight: 600, letterSpacing: 0 },
     h4: { fontWeight: 600 },
     h5: { fontWeight: 600 },
     h6: { fontWeight: 600 },
@@ -50,9 +62,6 @@ export const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        // Let our blurred restaurant photo (set on body::before in app.css)
-        // shine through. Without this, CssBaseline paints an opaque
-        // background.default color on top of it.
         body: {
           backgroundColor: "transparent",
         },
@@ -67,6 +76,16 @@ export const theme = createTheme({
           borderRadius: 999,
           paddingInline: "1.25rem",
           paddingBlock: "0.55rem",
+          boxShadow: "none",
+          "&.MuiButton-containedPrimary": {
+            backgroundImage:
+              "linear-gradient(180deg, #d18644 0%, #a95725 100%)",
+            color: "#120906",
+            "&:hover": {
+              backgroundImage:
+                "linear-gradient(180deg, #e0a15f 0%, #b8642d 100%)",
+            },
+          },
         },
         sizeLarge: {
           paddingInline: "1.5rem",
@@ -83,6 +102,10 @@ export const theme = createTheme({
         root: {
           borderRadius: 16,
           overflow: "hidden",
+          backgroundImage:
+            "linear-gradient(180deg, rgba(43,27,18,0.98) 0%, rgba(25,16,12,0.98) 100%)",
+          border: "1px solid rgba(246, 196, 83, 0.14)",
+          boxShadow: "0 18px 44px rgba(0,0,0,0.32)",
         },
       },
     },
@@ -93,15 +116,22 @@ export const theme = createTheme({
         fullWidth: true,
       },
     },
-    // Outlined inputs (TextField + Select use this internally) are
-    // transparent by default; give them a solid white surface so they read
-    // cleanly over the blurred restaurant photo backdrop.
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          backgroundColor: "#ffffff",
+          backgroundColor: "#241711",
+          color: "#f7efe7",
+          "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: "rgba(246, 196, 83, 0.22)",
+          },
+          "&:hover .MuiOutlinedInput-notchedOutline": {
+            borderColor: "rgba(246, 196, 83, 0.45)",
+          },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: "#c77738",
+          },
           "&.Mui-disabled": {
-            backgroundColor: "#f5f5f5",
+            backgroundColor: "#17100c",
           },
         },
       },
@@ -110,7 +140,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           "&.MuiFilledInput-root, &.MuiInput-root": {
-            backgroundColor: "#ffffff",
+            backgroundColor: "#241711",
           },
         },
       },
@@ -119,11 +149,42 @@ export const theme = createTheme({
       defaultProps: {
         elevation: 0,
       },
+      styleOverrides: {
+        root: {
+          backgroundImage:
+            "linear-gradient(180deg, rgba(22,12,8,0.98) 0%, rgba(10,6,4,0.94) 100%)",
+          borderBottom: "1px solid rgba(246, 196, 83, 0.16)",
+          boxShadow: "0 14px 36px rgba(0,0,0,0.28)",
+          backdropFilter: "blur(10px)",
+        },
+      },
     },
     MuiPaper: {
       styleOverrides: {
+        root: {
+          backgroundImage: "none",
+          backgroundColor: "#1b120d",
+          borderColor: "rgba(246, 196, 83, 0.16)",
+        },
         rounded: {
           borderRadius: 16,
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundImage:
+            "linear-gradient(180deg, #1e140f 0%, #120b08 100%)",
+          borderLeft: "1px solid rgba(246, 196, 83, 0.16)",
+        },
+      },
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: "#21150f",
+          border: "1px solid rgba(246, 196, 83, 0.16)",
         },
       },
     },

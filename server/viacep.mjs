@@ -13,7 +13,7 @@ export async function lookupViaCep(eightDigits) {
   const r = await fetch(url, {
     headers: {
       Accept: "application/json",
-      "User-Agent": "BurguerTenders-Training/1.0",
+      "User-Agent": "BeeTees-Training/1.0",
     },
   });
 

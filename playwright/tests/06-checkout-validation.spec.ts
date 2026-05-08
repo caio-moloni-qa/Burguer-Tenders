@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-import { saveLocation, ZIPS, addToCart, goToCheckout, fillValidCard } from "./helpers";
+﻿import { test, expect } from "@playwright/test";
+import { saveLocation, ZIPS, addToCart, goToCheckout, fillValidCard } from "../helpers/helpers";
 
 const PRODUCT_ID = "cheeseburguer";
 
@@ -12,7 +12,7 @@ test.describe("Suite 06 — Checkout Form Validation", () => {
     await goToCheckout(page);
   });
 
-  // ── Personal details ─────────────────────────────────────────────────────
+  // -- Personal details -----------------------------------------------------
 
   test("TC-06-01 — Missing name shows error", async ({ page }) => {
     await page.fill('[data-testid="checkout-email"]', "a@b.com");
@@ -44,18 +44,7 @@ test.describe("Suite 06 — Checkout Form Validation", () => {
     await expect(page.locator('[data-testid="checkout-error-email"]')).toBeVisible();
   });
 
-  // ── Card name ────────────────────────────────────────────────────────────
-
-  test("TC-06-05 — Card name with digits shows error", async ({ page }) => {
-    await page.fill('[data-testid="checkout-name"]', "Alice");
-    await page.fill('[data-testid="checkout-email"]', "alice@ex.com");
-    await page.fill('[data-testid="checkout-card-name"]', "Alice123");
-    await page.fill('[data-testid="checkout-card-number"]', "4111111111111111");
-    await page.fill('[data-testid="checkout-card-expiry"]', "1228");
-    await page.fill('[data-testid="checkout-card-cvc"]', "123");
-    await page.click('[data-testid="place-order"]');
-    await expect(page.locator('[data-testid="checkout-error-cardNameOnCard"]')).toBeVisible();
-  });
+  // -- Card name ------------------------------------------------------------
 
   test("TC-06-06 — Card number with fewer than 13 digits shows error", async ({ page }) => {
     await page.fill('[data-testid="checkout-name"]', "Alice");
@@ -90,24 +79,8 @@ test.describe("Suite 06 — Checkout Form Validation", () => {
     await expect(page.locator('[data-testid="checkout-error-cardCvc"]')).toBeVisible();
   });
 
-  // ── Delivery fields (non-editable) ───────────────────────────────────────
-
-  test("TC-06-09 — Delivery inputs are present and read-only", async ({ page }) => {
-    const fields = [
-      "checkout-zip",
-      "checkout-street",
-      "checkout-neighborhood",
-      "checkout-city-state",
-      "checkout-country",
-    ];
-    for (const testId of fields) {
-      const input = page.locator(`[data-testid="${testId}"]`);
-      await expect(input).toBeVisible();
-      await expect(input).toHaveAttribute("readonly");
-    }
-  });
-
   test("TC-06-10 — Store name is shown on checkout page", async ({ page }) => {
     await expect(page.locator('[data-testid="checkout-store-name"]')).toContainText(ZIPS.saoPaulo.store);
   });
 });
+

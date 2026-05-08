@@ -16,16 +16,16 @@ export function StoreBanner() {
       data-testid="menu-store-banner"
       sx={{
         mb: 2,
-        bgcolor: "#fff4d6",
+        bgcolor: "rgba(38, 24, 16, 0.92)",
         color: "text.primary",
         border: "1px solid",
-        borderColor: "rgba(218, 41, 28, 0.35)",
-        boxShadow: 1,
-        "& .MuiAlert-icon": { color: "primary.main" },
+        borderColor: "rgba(246, 196, 83, 0.24)",
+        boxShadow: "0 14px 30px rgba(0,0,0,0.28)",
+        "& .MuiAlert-icon": { color: "secondary.main" },
       }}
     >
       {t("menuOrderingFrom")}{" "}
-      <strong style={{ color: "#b71c1c" }}>{getStoreDisplayName(storeId)}</strong>
+      <strong style={{ color: "#f6c453" }}>{getStoreDisplayName(storeId)}</strong>
     </Alert>
   );
 }

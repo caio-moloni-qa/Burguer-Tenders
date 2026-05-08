@@ -16,8 +16,6 @@ import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import { lookupAddressByPostalCode } from "../../api/geocodeApi";
 import { saveDelivery } from "../../api/deliveryApi";
-import { getProductById } from "../../data/products";
-import { useCartStore } from "../../stores/cartStore";
 import {
   type LocationDelivery,
   useLocationStore,
@@ -43,10 +41,9 @@ export function LocationDrawer() {
   const lookupError = useLocationStore((s) => s.lookupError);
   const setLookupError = useLocationStore((s) => s.setLookupError);
 
-  const addProduct = useCartStore((s) => s.addProduct);
   const pendingAddProductId = useUiStore((s) => s.pendingAddProductId);
   const setPendingAddProductId = useUiStore((s) => s.setPendingAddProductId);
-  const showToast = useUiStore((s) => s.showToast);
+  const openCustomizer = useUiStore((s) => s.openCustomizer);
 
   const [saveReleased, setSaveReleased] = useState(true);
 
@@ -96,10 +93,7 @@ export function LocationDrawer() {
       setDeliveryFromServer(saved);
       closePanel();
       if (pendingAddProductId) {
-        addProduct(pendingAddProductId, 1);
-        const productName =
-          getProductById(pendingAddProductId)?.name ?? "Item";
-        showToast(productName);
+        openCustomizer(pendingAddProductId);
         setPendingAddProductId(null);
       }
     } catch (err) {

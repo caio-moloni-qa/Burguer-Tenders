@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-import { saveLocation, ZIPS } from "./helpers";
+﻿import { test, expect } from "@playwright/test";
+import { saveLocation, ZIPS } from "../helpers/helpers";
 
 test.describe("Suite 03 — Delivery Location Panel", () => {
   test.beforeEach(async ({ page }) => {
@@ -51,10 +51,10 @@ test.describe("Suite 03 — Delivery Location Panel", () => {
 
   test("TC-03-07 — Country selector changes the store list", async ({ page }) => {
     await page.click('[data-testid="location-toggle"]');
-    await expect(page.locator('[data-testid="location-stores-list"]')).toContainText("Burguer-Tenders Higienopolis");
+    await expect(page.locator('[data-testid="location-stores-list"]')).toContainText("BeeTee's Higienopolis");
 
     await page.selectOption('[data-testid="location-country"]', "US");
-    await expect(page.locator('[data-testid="location-stores-list"]')).toContainText("Burguer-Tenders Midtown");
+    await expect(page.locator('[data-testid="location-stores-list"]')).toContainText("BeeTee's Midtown");
   });
 
   test("TC-03-08 — Typing in location inputs does not lose focus", async ({ page }) => {
@@ -79,3 +79,4 @@ test.describe("Suite 03 — Delivery Location Panel", () => {
     await expect(page.locator('[data-testid="location-summary"]')).toBeVisible();
   });
 });
+

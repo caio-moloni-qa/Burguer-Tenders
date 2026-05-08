@@ -20,7 +20,7 @@ const PROMOS: Promo[] = [
     id: "combo",
     eyebrow: "Featured combo",
     headline: "Protein is never enough.",
-    subline: "Try out our Burguer with Tenders combo.",
+    subline: "Try out BeeTee's burger and tenders combo.",
     imageSrc: "/images/promos/promo-combo.jpg",
     imagePosition: "75% 35%",
   },

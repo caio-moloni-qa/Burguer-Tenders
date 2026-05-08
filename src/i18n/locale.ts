@@ -68,6 +68,32 @@ export type TranslationKey =
   | "menuAddToCartHint"
   | "menuNoItems"
   | "spicyBadge"
+  // Item customizer
+  | "customizerTitle"
+  | "customizerClose"
+  | "customizerBasePrice"
+  | "customizerPatties"
+  | "customizerPattySingular"
+  | "customizerPattyPlural"
+  | "customizerAddOns"
+  | "customizerQuantity"
+  | "customizerDecreaseQuantity"
+  | "customizerIncreaseQuantity"
+  | "customizerAddToCart"
+  | "customizerExtraEverything"
+  | "customizerExtraCheese"
+  | "customizerExtraBacon"
+  | "customizerExtraGrilledOnions"
+  | "customizerExtraJalapenos"
+  | "customizerExtraSauce"
+  | "customizerExtraSpicyDust"
+  | "customizerExtraLargePack"
+  | "customizerExtraLargeDrink"
+  | "customizerExtraLoadedFries"
+  | "customizerExtraLargeSize"
+  | "customizerExtraSeasoning"
+  | "customizerExtraDippingSauce"
+  | "customizerExtraNoIce"
   // Cart drawer
   | "cartTitle"
   | "cartEmpty"
@@ -168,6 +194,32 @@ const en: Dictionary = {
   menuAddToCartHint:  "Set your delivery location first",
   menuNoItems:        "No items in this category yet.",
   spicyBadge:         "Spicy",
+  // Item customizer
+  customizerTitle: "Customize {item}",
+  customizerClose: "Close customizer",
+  customizerBasePrice: "Base price {price}",
+  customizerPatties: "Patties",
+  customizerPattySingular: "patty",
+  customizerPattyPlural: "patties",
+  customizerAddOns: "Add-ons",
+  customizerQuantity: "Quantity",
+  customizerDecreaseQuantity: "Decrease quantity",
+  customizerIncreaseQuantity: "Increase quantity",
+  customizerAddToCart: "Add to cart",
+  customizerExtraEverything: "Everything style",
+  customizerExtraCheese: "Extra cheese",
+  customizerExtraBacon: "Crispy bacon",
+  customizerExtraGrilledOnions: "Grilled onions",
+  customizerExtraJalapenos: "Jalapenos",
+  customizerExtraSauce: "Extra sauce",
+  customizerExtraSpicyDust: "Spicy dust",
+  customizerExtraLargePack: "Make it a large pack",
+  customizerExtraLargeDrink: "Large drink",
+  customizerExtraLoadedFries: "Loaded fries",
+  customizerExtraLargeSize: "Large size",
+  customizerExtraSeasoning: "Extra seasoning",
+  customizerExtraDippingSauce: "Dipping sauce",
+  customizerExtraNoIce: "No ice",
   // Cart drawer
   cartTitle:         "Cart",
   cartEmpty:         "Your cart is empty.",
@@ -265,6 +317,32 @@ const pt: Dictionary = {
   menuAddToCartHint:  "Defina seu endereço de entrega primeiro",
   menuNoItems:        "Nenhum item nesta categoria ainda.",
   spicyBadge:         "Picante",
+  // Item customizer
+  customizerTitle: "Personalizar {item}",
+  customizerClose: "Fechar personalizacao",
+  customizerBasePrice: "Preco base {price}",
+  customizerPatties: "Carnes",
+  customizerPattySingular: "carne",
+  customizerPattyPlural: "carnes",
+  customizerAddOns: "Adicionais",
+  customizerQuantity: "Quantidade",
+  customizerDecreaseQuantity: "Diminuir quantidade",
+  customizerIncreaseQuantity: "Aumentar quantidade",
+  customizerAddToCart: "Adicionar ao carrinho",
+  customizerExtraEverything: "Com tudo",
+  customizerExtraCheese: "Queijo extra",
+  customizerExtraBacon: "Bacon crocante",
+  customizerExtraGrilledOnions: "Cebola grelhada",
+  customizerExtraJalapenos: "Jalapenos",
+  customizerExtraSauce: "Molho extra",
+  customizerExtraSpicyDust: "Tempero picante",
+  customizerExtraLargePack: "Transformar em porcao grande",
+  customizerExtraLargeDrink: "Bebida grande",
+  customizerExtraLoadedFries: "Batata completa",
+  customizerExtraLargeSize: "Tamanho grande",
+  customizerExtraSeasoning: "Tempero extra",
+  customizerExtraDippingSauce: "Molho para acompanhar",
+  customizerExtraNoIce: "Sem gelo",
   // Cart drawer
   cartTitle:         "Carrinho",
   cartEmpty:         "Seu carrinho está vazio.",

@@ -31,8 +31,8 @@ const CHECKOUT_TRANSITION_MS = 750;
 export function CartDrawer() {
   const drawerOpen = useCartStore((s) => s.drawerOpen);
   const closeDrawer = useCartStore((s) => s.closeDrawer);
-  const quantities = useCartStore((s) => s.quantities);
-  const lines = useMemo(() => getCartLines(quantities), [quantities]);
+  const linesById = useCartStore((s) => s.linesById);
+  const lines = useMemo(() => getCartLines(linesById), [linesById]);
   const subtotal = useCartStore(selectSubtotal);
   const totalItems = useCartStore(selectTotalItemCount);
 

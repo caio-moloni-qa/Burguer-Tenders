@@ -1,37 +1,37 @@
-import { test, expect } from "@playwright/test";
-import { ZIPS, saveLocation, lookupAddress } from "./helpers";
+﻿import { test, expect } from "@playwright/test";
+import { ZIPS, saveLocation, lookupAddress } from "../helpers/helpers";
 
 test.describe("Suite 04 — Address Geocoding & Store Resolution", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
   });
 
-  // ── TC-04-01 / TC-04-02 / TC-04-03 — ZIP resolution per supported area ─────
+  // -- TC-04-01 / TC-04-02 / TC-04-03 — ZIP resolution per supported area -----
 
-  test("TC-04-01 — Londrina BR ZIP resolves to Burguer-Tenders Higienopolis", async ({ page }) => {
+  test("TC-04-01 — Londrina BR ZIP resolves to BeeTee's Higienopolis", async ({ page }) => {
     // After a BR lookup that resolves a store the locale switches to pt-BR and the
     // full UI is re-rendered.  The store-status sentence becomes:
-    //   "Entrega disponível por Burguer-Tenders Higienopolis"
+    //   "Entrega disponível por BeeTee's Higienopolis"
     // We assert only on the store name so the test is locale-agnostic.
     await lookupAddress(page, ZIPS.londrina.zip, "BR");
     await expect(page.locator('[data-testid="location-store-status"]'))
       .toContainText(ZIPS.londrina.store);
   });
 
-  test("TC-04-02 — São Paulo BR ZIP resolves to Burguer-Tenders Pinheiros", async ({ page }) => {
+  test("TC-04-02 — São Paulo BR ZIP resolves to BeeTee's Pinheiros", async ({ page }) => {
     await lookupAddress(page, ZIPS.saoPaulo.zip, "BR");
     await expect(page.locator('[data-testid="location-store-status"]'))
       .toContainText(ZIPS.saoPaulo.store);
   });
 
-  test("TC-04-03 — New York US ZIP resolves to Burguer-Tenders Midtown", async ({ page }) => {
-    // US lookup → locale stays en-US → status: "Delivery available from Burguer-Tenders Midtown"
+  test("TC-04-03 — New York US ZIP resolves to BeeTee's Midtown", async ({ page }) => {
+    // US lookup ? locale stays en-US ? status: "Delivery available from BeeTee's Midtown"
     await lookupAddress(page, ZIPS.newYork.zip, "US");
     await expect(page.locator('[data-testid="location-store-status"]'))
       .toContainText(ZIPS.newYork.store);
   });
 
-  // ── TC-04-04 — Unknown / undeliverable city ───────────────────────────────
+  // -- TC-04-04 — Unknown / undeliverable city -------------------------------
 
   test("TC-04-04 — Unknown city ZIP shows no-delivery message", async ({ page }) => {
     // Curitiba is a valid BR city but has no store — locale does NOT switch.
@@ -40,7 +40,7 @@ test.describe("Suite 04 — Address Geocoding & Store Resolution", () => {
       .toContainText(/don't deliver to this city yet|não entregamos nesta cidade/i);
   });
 
-  // ── TC-04-05 — Address fields populated after lookup ──────────────────────
+  // -- TC-04-05 — Address fields populated after lookup ----------------------
 
   test("TC-04-05 — Address fields are populated after a successful lookup", async ({ page }) => {
     await lookupAddress(page, ZIPS.saoPaulo.zip, "BR");
@@ -49,7 +49,7 @@ test.describe("Suite 04 — Address Geocoding & Store Resolution", () => {
     await expect(page.locator('[data-testid="location-state"]')).not.toBeEmpty();
   });
 
-  // ── TC-04-06 — Lookup button disabled while request is in flight ──────────
+  // -- TC-04-06 — Lookup button disabled while request is in flight ----------
 
   test("TC-04-06 — Lookup button is disabled while request is in flight", async ({ page }) => {
     await page.click('[data-testid="location-toggle"]');
@@ -66,7 +66,7 @@ test.describe("Suite 04 — Address Geocoding & Store Resolution", () => {
     ).toBeVisible();
   });
 
-  // ── TC-04-07 — Lookup does not wipe user-typed fields ────────────────────
+  // -- TC-04-07 — Lookup does not wipe user-typed fields --------------------
 
   test("TC-04-07 — Complement field value is preserved after lookup", async ({ page }) => {
     // Open panel and type in complement BEFORE the lookup.
@@ -94,7 +94,7 @@ test.describe("Suite 04 — Address Geocoding & Store Resolution", () => {
     await expect(page.locator('[data-testid="location-complement"]')).toHaveValue("Apt 42");
   });
 
-  // ── TC-04-08 — Saved location persists across page reload ────────────────
+  // -- TC-04-08 — Saved location persists across page reload ----------------
 
   test("TC-04-08 — Saving a valid location persists across page reload", async ({ page }) => {
     await saveLocation(page, ZIPS.londrina.zip, ZIPS.londrina.country);
@@ -105,3 +105,4 @@ test.describe("Suite 04 — Address Geocoding & Store Resolution", () => {
     await expect(page.locator('[data-testid="location-summary"]')).toBeVisible();
   });
 });
+

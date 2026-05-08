@@ -23,7 +23,7 @@ export function HeaderBrand() {
       onClick={goHome}
       data-action="go-home"
       data-testid="header-home"
-      aria-label="Burguer-Tenders — go to menu"
+      aria-label="BeeTee's - go to menu"
       focusRipple
       sx={{
         display: "flex",
@@ -32,7 +32,7 @@ export function HeaderBrand() {
         px: 1,
         py: 0.5,
         borderRadius: 2,
-        color: "primary.contrastText",
+        color: "common.white",
         textAlign: "left",
         "&:focus-visible": {
           outline: "2px solid",
@@ -42,7 +42,7 @@ export function HeaderBrand() {
       }}
     >
       <Avatar
-        src="/images/logo.png"
+        src="/images/app-icon.png"
         alt=""
         variant="rounded"
         data-testid="site-logo"
@@ -61,7 +61,7 @@ export function HeaderBrand() {
           component="span"
           sx={{ fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.01em" }}
         >
-          Burguer-Tenders
+          BeeTee's
         </Typography>
         <Typography
           variant="caption"

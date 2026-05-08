@@ -12,11 +12,11 @@ export function PageSpinner() {
       sx={{
         color: "primary.contrastText",
         zIndex: (theme) => theme.zIndex.modal + 10,
-        backgroundColor: "rgba(255, 255, 255, 0.7)",
+        backgroundColor: "rgba(8, 5, 3, 0.74)",
         backdropFilter: "blur(2px)",
       }}
     >
-      <CircularProgress color="primary" thickness={4.5} size={56} />
+      <CircularProgress color="secondary" thickness={4.5} size={56} />
     </Backdrop>
   );
 }

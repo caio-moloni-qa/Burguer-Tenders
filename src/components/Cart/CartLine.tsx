@@ -19,7 +19,6 @@ type Props = {
 
 export function CartLine({ line }: Props) {
   const product = getProductById(line.productId);
-  const addProduct = useCartStore((s) => s.addProduct);
   const setQuantity = useCartStore((s) => s.setQuantity);
   const removeLine = useCartStore((s) => s.removeLine);
 
@@ -27,12 +26,13 @@ export function CartLine({ line }: Props) {
     return null;
   }
 
-  const lineTotal = product.priceUsd * line.quantity;
+  const lineTotal = line.unitPriceUsd * line.quantity;
 
   return (
     <ListItem
       disableGutters
       data-product-id={line.productId}
+      data-cart-line-id={line.id}
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -53,8 +53,18 @@ export function CartLine({ line }: Props) {
             {product.shortName}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {formatPrice(product.priceUsd)} {t("cartEach")}
+            {formatPrice(line.unitPriceUsd)} {t("cartEach")}
           </Typography>
+          {line.customizationSummary.length > 0 && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 0.25 }}
+              data-testid="cart-line-customizations"
+            >
+              {line.customizationSummary.join(", ")}
+            </Typography>
+          )}
         </Box>
         <Typography
           variant="subtitle2"
@@ -67,7 +77,7 @@ export function CartLine({ line }: Props) {
       <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
         <IconButton
           size="small"
-          onClick={() => setQuantity(line.productId, line.quantity - 1)}
+          onClick={() => setQuantity(line.id, line.quantity - 1)}
           data-action="dec-line"
           data-product-id={line.productId}
           aria-label={`Decrease ${product.shortName}`}
@@ -88,7 +98,7 @@ export function CartLine({ line }: Props) {
         </Typography>
         <IconButton
           size="small"
-          onClick={() => addProduct(line.productId, 1)}
+          onClick={() => setQuantity(line.id, line.quantity + 1)}
           data-action="inc-line"
           data-product-id={line.productId}
           aria-label={`Increase ${product.shortName}`}
@@ -104,7 +114,7 @@ export function CartLine({ line }: Props) {
         <IconButton
           size="small"
           color="error"
-          onClick={() => removeLine(line.productId)}
+          onClick={() => removeLine(line.id)}
           data-action="remove-line"
           data-product-id={line.productId}
           aria-label={`${t("cartRemove")} ${product.shortName}`}

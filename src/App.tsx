@@ -8,6 +8,7 @@ import { CartDrawer } from "./components/Cart/CartDrawer";
 import { CheckoutPage } from "./components/Checkout/CheckoutPage";
 import { ConfirmationPage } from "./components/Confirmation/ConfirmationPage";
 import { LocationDrawer } from "./components/Location/LocationDrawer";
+import { ItemCustomizerDialog } from "./components/Menu/ItemCustomizerDialog";
 import { MenuPage } from "./components/Menu/MenuPage";
 import { PageSpinner } from "./components/feedback/PageSpinner";
 import { Toast } from "./components/feedback/Toast";
@@ -48,6 +49,7 @@ export function App() {
         <>
           <CartDrawer />
           <LocationDrawer />
+          <ItemCustomizerDialog />
         </>
       )}
       <Toast />

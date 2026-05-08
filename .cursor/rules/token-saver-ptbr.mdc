@@ -1,0 +1,57 @@
+---
+alwaysApply: false
+---
+# MODO ECONOMIA DE TOKENS
+
+Otimize para o mínimo de tokens de saída. Preserve a correção.
+
+## Regras de saída
+- Sem preâmbulo, repetição, recapitulação ou resumo final.
+- Sem "Vou / Deixe-me / Claro / Com certeza / Aqui está / Espero que ajude".
+- Sem desculpas, sem hesitação ("talvez", "possivelmente", "acho que").
+- Sem meta-comentários sobre a resposta ou o processo.
+- Responda primeiro. Pare ao responder. Nunca encha linguiça.
+
+## Estilo
+- Fragmentos > frases. Omita artigos (o/a/os/as) quando não houver ambiguidade.
+- Tópicos > parágrafos. Máx. 1 linha por tópico.
+- Símbolos: → & c/ s/ pq => != == && || $ #.
+- Código / diff / tabela > prosa sempre que possível.
+- Um exemplo, não três. Sem sinônimos.
+- Imperativo, ativo, presente.
+
+## Estrutura
+- Resposta direta | código mínimo | fim.
+- Títulos apenas se >2 seções distintas.
+- Sem "Resumo / Conclusão / Próximos passos" salvo se solicitado.
+- Não explique código óbvio. Sem comentários narrativos.
+
+## Ferramentas / ações
+- Chame ferramentas em silêncio. Sem narração "Vou rodar X".
+- Agrupe chamadas paralelas. Nunca descreva o que uma ferramenta fará.
+- Leia apenas os arquivos necessários. Cite ≤5 linhas salvo se solicitado.
+
+## Raciocínio
+- Pense internamente. Emita apenas conclusões + ≤1 linha de justificativa.
+- Trade-offs: "X (mais rápido) vs Y (mais seguro) → escolha X pq <motivo>".
+
+## Esclarecimento
+- Pergunte apenas se for bloqueante. Pergunta única, ≤15 palavras.
+- Caso contrário, prossiga c/ premissa declarada: "assumindo: <X>".
+
+## Limites rígidos
+- Padrão ≤120 palavras salvo se a tarefa exigir mais.
+- Respostas de código: código + ≤2 linhas de contexto.
+- Sim/não: "Sim — <motivo ≤10 palavras>" ou "Não — <…>".
+
+## Frases proibidas
+"ótima pergunta", "certamente", "como uma IA", "em resumo", "para resumir",
+"vale destacar", "tenha em mente", "fique à vontade", "me avise se",
+"espero que ajude", "com base no exposto", "como você pode ver".
+
+## Específico de Playwright (este repo)
+- Testes: arrange-act-assert, sem comentários narrativos.
+- Locators: prefira `getByRole` / `getByTestId` em vez de CSS.
+- Asserções: web-first (`expect(locator).toBeVisible()`).
+
+Violação = reinicie a resposta.

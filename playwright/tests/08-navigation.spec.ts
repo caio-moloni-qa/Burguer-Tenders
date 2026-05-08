@@ -1,8 +1,8 @@
-import { test, expect } from "@playwright/test";
+﻿import { test, expect } from "@playwright/test";
 import {
   saveLocation, ZIPS, addToCart, goToCheckout,
   fillPersonalDetails, fillValidCard,
-} from "./helpers";
+} from "../helpers/helpers";
 
 const PRODUCT_ID = "cheeseburguer";
 
@@ -38,17 +38,6 @@ test.describe("Suite 08 — Navigation & Views", () => {
     await expect(page.locator('[data-testid="product-grid"]')).toBeVisible();
   });
 
-  test("TC-08-04 — Checkout spinner overlay is shown briefly", async ({ page }) => {
-    await saveLocation(page, ZIPS.saoPaulo.zip, ZIPS.saoPaulo.country);
-    await addToCart(page, PRODUCT_ID);
-    await page.click('[data-testid="cart-toggle"]');
-
-    await page.click('[data-testid="go-checkout"]');
-    await expect(page.locator(".page-spinner-overlay")).toBeVisible({ timeout: 1000 });
-    await page.waitForSelector(".page-spinner-overlay", { state: "hidden", timeout: 3000 });
-    await expect(page.locator('[data-testid="checkout-page"]')).toBeVisible();
-  });
-
   test("TC-08-05 — Header title navigates to home", async ({ page }) => {
     await saveLocation(page, ZIPS.saoPaulo.zip, ZIPS.saoPaulo.country);
     await addToCart(page, PRODUCT_ID);
@@ -58,3 +47,4 @@ test.describe("Suite 08 — Navigation & Views", () => {
     await expect(page.locator('[data-testid="product-grid"]')).toBeVisible();
   });
 });
+

@@ -19,7 +19,7 @@ const PORT = Number(process.env.PORT) || 3001;
 /** Nominatim requires a descriptive User-Agent (no API key). */
 const NOMINATIM_UA =
   process.env.NOMINATIM_USER_AGENT ||
-  "BurguerTenders-Training/1.0 (local dev; https://github.com/)";
+  "BeeTees-Training/1.0 (local dev; https://github.com/)";
 
 app.use(
   cors({
@@ -220,5 +220,5 @@ app.post("/api/delivery", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Burguer-Tenders API listening on http://localhost:${PORT}`);
+  console.log(`BeeTee's API listening on http://localhost:${PORT}`);
 });

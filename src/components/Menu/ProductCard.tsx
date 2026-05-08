@@ -27,12 +27,11 @@ type Props = {
 
 export function ProductCard({ product }: Props) {
   const located = useLocationStore(selectHasDeliveryLocation);
-  const addProduct = useCartStore((s) => s.addProduct);
   const closeCart = useCartStore((s) => s.closeDrawer);
   const isCartOpen = useCartStore((s) => s.drawerOpen);
   const openPanel = useLocationStore((s) => s.openPanel);
-  const showToast = useUiStore((s) => s.showToast);
   const setPendingAddProductId = useUiStore((s) => s.setPendingAddProductId);
+  const openCustomizer = useUiStore((s) => s.openCustomizer);
 
   const handleAddToCart = () => {
     if (!located) {
@@ -43,12 +42,12 @@ export function ProductCard({ product }: Props) {
       openPanel();
       return;
     }
-    addProduct(product.id, 1);
-    showToast(product.name);
+    openCustomizer(product.id);
   };
 
   return (
     <Card
+      className="product-card"
       data-product-id={product.id}
       sx={{
         display: "flex",
@@ -61,7 +60,13 @@ export function ProductCard({ product }: Props) {
         },
       }}
     >
-      <Box sx={{ position: "relative", aspectRatio: "4 / 3", bgcolor: "grey.100" }}>
+      <Box
+        sx={{
+          position: "relative",
+          aspectRatio: "4 / 3",
+          bgcolor: "rgba(10, 6, 4, 0.9)",
+        }}
+      >
         <CardMedia
           component="img"
           src={product.imageSrc}
@@ -72,6 +77,7 @@ export function ProductCard({ product }: Props) {
         />
         {product.spicy && (
           <Chip
+            className="product-card__badge"
             icon={<LocalFireDepartmentRoundedIcon />}
             label={t("spicyBadge")}
             color="primary"
@@ -88,13 +94,19 @@ export function ProductCard({ product }: Props) {
       </Box>
       <CardContent sx={{ flexGrow: 1, pb: 1.5 }}>
         <Stack spacing={1}>
-          <Typography variant="h6" component="h2" sx={{ lineHeight: 1.25 }}>
+          <Typography
+            className="product-card__name"
+            variant="h6"
+            component="h2"
+            sx={{ lineHeight: 1.25 }}
+          >
             {product.name}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography className="product-card__desc" variant="body2" color="text.secondary">
             {product.description}
           </Typography>
           <Typography
+            className="product-card__price"
             variant="h6"
             color="primary.dark"
             sx={{ fontWeight: 700 }}

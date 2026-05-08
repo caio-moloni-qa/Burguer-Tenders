@@ -13,6 +13,7 @@ type UiState = {
   /** Stable counter so the toast component can re-trigger its hide-timer on repeated adds. */
   toastVersion: number;
   pageSpinnerVisible: boolean;
+  customizerProductId: string | null;
   /**
    * Product the user tried to add to the cart while no delivery location was set.
    * The location-save handler reads this, adds the item, then clears it.
@@ -26,6 +27,8 @@ type UiState = {
   hideToast: () => void;
   showPageSpinner: () => void;
   hidePageSpinner: () => void;
+  openCustomizer: (productId: string) => void;
+  closeCustomizer: () => void;
   setPendingAddProductId: (productId: string | null) => void;
 };
 
@@ -36,6 +39,7 @@ export const useUiStore = create<UiState>((set) => ({
   toastItemName: "",
   toastVersion: 0,
   pageSpinnerVisible: false,
+  customizerProductId: null,
   pendingAddProductId: null,
 
   setView: (view) => set({ view }),
@@ -46,5 +50,7 @@ export const useUiStore = create<UiState>((set) => ({
   hideToast: () => set({ toastItemName: "" }),
   showPageSpinner: () => set({ pageSpinnerVisible: true }),
   hidePageSpinner: () => set({ pageSpinnerVisible: false }),
+  openCustomizer: (customizerProductId) => set({ customizerProductId }),
+  closeCustomizer: () => set({ customizerProductId: null }),
   setPendingAddProductId: (pendingAddProductId) => set({ pendingAddProductId }),
 }));

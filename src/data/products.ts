@@ -1,7 +1,7 @@
 import type { Product } from "../types/product";
 
 /**
- * Burguer-Tenders — catalog of items available to buy.
+ * BeeTee's catalog of items available to buy.
  * Single source of truth for the storefront until a backend exists.
  */
 export const products: readonly Product[] = [

@@ -2,18 +2,22 @@ import { create } from "zustand";
 import { getProductById } from "../data/products";
 
 export type CartLine = {
+  id: string;
   productId: string;
   quantity: number;
+  unitPriceUsd: number;
+  customizationSummary: string[];
 };
 
 type CartState = {
-  /** Productid → quantity. Lines with quantity ≤ 0 are removed. */
-  quantities: Record<string, number>;
+  /** Cart lines keyed by line id. Customized items use unique line ids. */
+  linesById: Record<string, CartLine>;
   drawerOpen: boolean;
 
   addProduct: (productId: string, amount?: number) => void;
-  setQuantity: (productId: string, quantity: number) => void;
-  removeLine: (productId: string) => void;
+  addCustomizedProduct: (line: Omit<CartLine, "id">) => void;
+  setQuantity: (lineId: string, quantity: number) => void;
+  removeLine: (lineId: string) => void;
   clear: () => void;
 
   toggleDrawer: () => void;
@@ -21,7 +25,7 @@ type CartState = {
 };
 
 export const useCartStore = create<CartState>((set) => ({
-  quantities: {},
+  linesById: {},
   drawerOpen: false,
 
   addProduct: (productId, amount = 1) =>
@@ -29,71 +33,97 @@ export const useCartStore = create<CartState>((set) => ({
       if (amount <= 0) {
         return state;
       }
-      const next = (state.quantities[productId] ?? 0) + amount;
-      return { quantities: { ...state.quantities, [productId]: next } };
-    }),
-
-  setQuantity: (productId, quantity) =>
-    set((state) => {
-      const next = { ...state.quantities };
-      if (quantity <= 0) {
-        delete next[productId];
-      } else {
-        next[productId] = quantity;
+      const product = getProductById(productId);
+      if (!product) {
+        return state;
       }
-      return { quantities: next };
+      const existing = state.linesById[productId];
+      const nextLine: CartLine = existing
+        ? { ...existing, quantity: existing.quantity + amount }
+        : {
+            id: productId,
+            productId,
+            quantity: amount,
+            unitPriceUsd: product.priceUsd,
+            customizationSummary: [],
+          };
+      return { linesById: { ...state.linesById, [productId]: nextLine } };
     }),
 
-  removeLine: (productId) =>
+  addCustomizedProduct: (line) =>
     set((state) => {
-      const next = { ...state.quantities };
-      delete next[productId];
-      return { quantities: next };
+      const lineId = `${line.productId}-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`;
+      return {
+        linesById: {
+          ...state.linesById,
+          [lineId]: { ...line, id: lineId },
+        },
+      };
     }),
 
-  clear: () => set({ quantities: {} }),
+  setQuantity: (lineId, quantity) =>
+    set((state) => {
+      const next = { ...state.linesById };
+      if (quantity <= 0) {
+        delete next[lineId];
+      } else if (next[lineId]) {
+        next[lineId] = { ...next[lineId], quantity };
+      } else {
+        const product = getProductById(lineId);
+        if (product) {
+          next[lineId] = {
+            id: lineId,
+            productId: lineId,
+            quantity,
+            unitPriceUsd: product.priceUsd,
+            customizationSummary: [],
+          };
+        }
+      }
+      return { linesById: next };
+    }),
+
+  removeLine: (lineId) =>
+    set((state) => {
+      const next = { ...state.linesById };
+      delete next[lineId];
+      return { linesById: next };
+    }),
+
+  clear: () => set({ linesById: {} }),
 
   toggleDrawer: () => set((s) => ({ drawerOpen: !s.drawerOpen })),
   closeDrawer: () => set({ drawerOpen: false }),
 }));
 
-// ─── Derived helpers ──────────────────────────────────────────────────────────
+// Derived helpers
 //
 // IMPORTANT: do NOT pass these directly to `useCartStore(...)` when they return
-// arrays or objects — `useSyncExternalStore` requires the snapshot to be cached
-// across calls, and a fresh array literal triggers an infinite render loop.
-// Instead, subscribe to the raw `quantities` map (its reference is stable
-// between mutations) and feed it to these helpers from a `useMemo`.
+// arrays or objects. Subscribe to the raw `linesById` map and useMemo this work.
 
-export function getCartLines(
-  quantities: Record<string, number>
-): CartLine[] {
-  return Object.entries(quantities)
-    .filter(([, q]) => q > 0)
-    .map(([productId, quantity]) => ({ productId, quantity }));
+export function getCartLines(linesById: Record<string, CartLine>): CartLine[] {
+  return Object.values(linesById).filter((line) => line.quantity > 0);
 }
 
-/** Primitive return — safe to use as a selector: `useCartStore(selectTotalItemCount)`. */
 export function selectTotalItemCount(state: {
-  quantities: Record<string, number>;
+  linesById: Record<string, CartLine>;
 }): number {
   let n = 0;
-  for (const q of Object.values(state.quantities)) {
-    n += q;
+  for (const line of Object.values(state.linesById)) {
+    n += line.quantity;
   }
   return n;
 }
 
-/** Primitive return — safe to use as a selector. */
-export function selectSubtotal(state: { quantities: Record<string, number> }): number {
+export function selectSubtotal(state: {
+  linesById: Record<string, CartLine>;
+}): number {
   let total = 0;
-  for (const [productId, quantity] of Object.entries(state.quantities)) {
-    if (quantity <= 0) {
-      continue;
-    }
-    const p = getProductById(productId);
-    if (p) {
-      total += p.priceUsd * quantity;
+  for (const line of Object.values(state.linesById)) {
+    if (line.quantity > 0) {
+      total += line.unitPriceUsd * line.quantity;
     }
   }
   return total;

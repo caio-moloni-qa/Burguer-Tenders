@@ -3,19 +3,19 @@ import type { StoreDefinition } from "../types/store";
 export const STORES: readonly StoreDefinition[] = [
   {
     id: "br-londrina-higienopolis",
-    displayName: "Burguer-Tenders Higienopolis",
+    displayName: "BeeTee's Higienopolis",
     countryCode: "BR",
     serviceAreas: [{ city: "Londrina", state: "PR" }],
   },
   {
     id: "br-sp-pinheiros",
-    displayName: "Burguer-Tenders Pinheiros",
+    displayName: "BeeTee's Pinheiros",
     countryCode: "BR",
     serviceAreas: [{ city: "São Paulo", state: "SP" }],
   },
   {
     id: "us-ny-midtown",
-    displayName: "Burguer-Tenders Midtown",
+    displayName: "BeeTee's Midtown",
     countryCode: "US",
     serviceAreas: [{ city: "New York", state: "NY" }],
   },

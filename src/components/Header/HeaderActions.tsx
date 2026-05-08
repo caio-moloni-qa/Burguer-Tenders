@@ -1,10 +1,11 @@
-import { Badge, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import { Badge, Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnRounded";
 import ShoppingBagRoundedIcon from "@mui/icons-material/ShoppingBagRounded";
+import StorefrontRoundedIcon from "@mui/icons-material/StorefrontRounded";
+import { getStoreDisplayName } from "../../data/stores";
 import { useCartStore, selectTotalItemCount } from "../../stores/cartStore";
 import {
   selectHasDeliveryLocation,
-  selectLocationSummary,
   useLocationStore,
 } from "../../stores/locationStore";
 import { t } from "../../i18n/locale";
@@ -19,7 +20,8 @@ export function HeaderActions() {
   const togglePanel = useLocationStore((s) => s.togglePanel);
   const closePanel = useLocationStore((s) => s.closePanel);
   const located = useLocationStore(selectHasDeliveryLocation);
-  const summary = useLocationStore(selectLocationSummary);
+  const storeId = useLocationStore((s) => s.delivery.storeId);
+  const storeName = storeId ? getStoreDisplayName(storeId) : "";
 
   const handleToggleLocation = () => {
     if (drawerOpen) {
@@ -37,23 +39,45 @@ export function HeaderActions() {
 
   return (
     <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-      {located && summary && (
-        <Typography
-          variant="caption"
-          data-testid="location-summary"
-          title={summary}
+      {located && storeName && (
+        <Box
+          data-testid="menu-store-banner"
+          title={`${t("menuOrderingFrom")} ${storeName}`}
           sx={{
-            color: "primary.contrastText",
-            opacity: 0.92,
-            maxWidth: { xs: "11rem", sm: "14rem" },
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            display: { xs: "none", sm: "block" },
+            display: { xs: "none", md: "inline-flex" },
+            alignItems: "center",
+            gap: 0.75,
+            minHeight: 34,
+            maxWidth: { md: "18rem", lg: "24rem" },
+            px: 1.25,
+            border: "1px solid",
+            borderColor: "rgba(246, 196, 83, 0.24)",
+            borderRadius: 999,
+            bgcolor: "rgba(38, 24, 16, 0.72)",
+            color: "common.white",
+            boxShadow: "0 8px 20px rgba(0,0,0,0.18)",
           }}
         >
-          {summary}
-        </Typography>
+          <StorefrontRoundedIcon sx={{ fontSize: 18, color: "secondary.main", flexShrink: 0 }} />
+          <Typography
+            variant="caption"
+            component="span"
+            sx={{
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              fontWeight: 600,
+            }}
+          >
+            <Box component="span" sx={{ opacity: 0.78 }}>
+              {t("menuOrderingFrom")}{" "}
+            </Box>
+            <Box component="strong" sx={{ color: "secondary.main", fontWeight: 800 }}>
+              {storeName}
+            </Box>
+          </Typography>
+        </Box>
       )}
       <Tooltip
         title={panelOpen ? t("headerCloseLocation") : t("headerOpenLocation")}
@@ -66,7 +90,7 @@ export function HeaderActions() {
           aria-label={
             panelOpen ? t("headerCloseLocation") : t("headerOpenLocation")
           }
-          sx={{ color: "primary.contrastText" }}
+          sx={{ color: "common.white" }}
         >
           <Badge
             color="secondary"
@@ -86,7 +110,7 @@ export function HeaderActions() {
           data-testid="cart-toggle"
           aria-expanded={drawerOpen}
           aria-label={drawerOpen ? t("headerCloseCart") : t("headerOpenCart")}
-          sx={{ color: "primary.contrastText" }}
+          sx={{ color: "common.white" }}
         >
           <Badge
             badgeContent={totalItems}

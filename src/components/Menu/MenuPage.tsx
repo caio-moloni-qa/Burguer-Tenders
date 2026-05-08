@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Box, Container, Stack, Typography } from "@mui/material";
+import { Box, Container, Typography } from "@mui/material";
 import { products } from "../../data/products";
 import { useUiStore } from "../../stores/uiStore";
 import { Header } from "../Header/Header";
@@ -7,7 +7,6 @@ import { CategoryFilter } from "./CategoryFilter";
 import { MenuSearch } from "./MenuSearch";
 import { ProductCard } from "./ProductCard";
 import { PromoBanner } from "./PromoBanner";
-import { StoreBanner } from "./StoreBanner";
 import { t } from "../../i18n/locale";
 
 export function MenuPage() {
@@ -33,22 +32,17 @@ export function MenuPage() {
     <>
       <Header />
       <PromoBanner />
-      <Container component="main" maxWidth="lg" sx={{ py: { xs: 3, md: 4 } }}>
-        <StoreBanner />
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={2}
-          sx={{
-            alignItems: { xs: "stretch", sm: "center" },
-            justifyContent: "space-between",
-            mb: 2,
-          }}
-        >
-          <Typography variant="h5" component="h2">
-            {t("menuHeading")}
-          </Typography>
+      <Container
+        component="main"
+        maxWidth={false}
+        sx={{
+          py: { xs: 3, md: 4 },
+          px: { xs: 2, sm: 3, md: 4 },
+        }}
+      >
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
           <CategoryFilter />
-        </Stack>
+        </Box>
         <MenuSearch />
         <Box
           data-testid="product-grid"
@@ -59,6 +53,8 @@ export function MenuPage() {
               xs: "1fr",
               sm: "repeat(2, 1fr)",
               md: "repeat(3, 1fr)",
+              lg: "repeat(4, 1fr)",
+              xl: "repeat(5, 1fr)",
             },
           }}
         >

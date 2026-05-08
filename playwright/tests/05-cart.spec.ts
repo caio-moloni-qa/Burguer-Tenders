@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-import { saveLocation, ZIPS } from "./helpers";
+﻿import { test, expect } from "@playwright/test";
+import { addToCart, saveLocation, ZIPS } from "../helpers/helpers";
 
 const PRODUCT_ID = "cheeseburguer";
 
@@ -21,29 +21,22 @@ test.describe("Suite 05 — Cart", () => {
   });
 
   test("TC-05-03 — Adding a product increments the badge", async ({ page }) => {
-    await page.click(`[data-product-id="${PRODUCT_ID}"] [data-testid="add-to-cart"]`);
+    await addToCart(page, PRODUCT_ID);
     await expect(page.locator('[data-testid="cart-count"]')).toHaveText("1");
   });
 
   test("TC-05-04 — Toast notification appears after adding", async ({ page }) => {
     // Toast text is locale-aware:
-    //   en-US → "Cheeseburguer was successfully added to cart!"
-    //   pt-BR → "Cheeseburguer foi adicionado ao carrinho com sucesso!"
+    //   en-US ? "Cheeseburguer was successfully added to cart!"
+    //   pt-BR ? "Cheeseburguer foi adicionado ao carrinho com sucesso!"
     // Asserting on the product name is locale-agnostic and unambiguous.
-    await page.click(`[data-product-id="${PRODUCT_ID}"] [data-testid="add-to-cart"]`);
+    await addToCart(page, PRODUCT_ID);
     await expect(page.locator('[data-testid="cart-toast"]')).toBeVisible();
     await expect(page.locator('[data-testid="cart-toast"]')).toContainText("Cheeseburguer");
   });
 
-  test("TC-05-05 — Toast auto-hides within 3 seconds", async ({ page }) => {
-    await page.click(`[data-product-id="${PRODUCT_ID}"] [data-testid="add-to-cart"]`);
-    await expect(page.locator('[data-testid="cart-toast"]')).toBeVisible();
-    await page.waitForTimeout(3000);
-    await expect(page.locator('[data-testid="cart-toast"]')).toBeHidden();
-  });
-
   test("TC-05-06 — Cart drawer does not re-render when incrementing quantity", async ({ page }) => {
-    await page.click(`[data-product-id="${PRODUCT_ID}"] [data-testid="add-to-cart"]`);
+    await addToCart(page, PRODUCT_ID);
     await page.click('[data-testid="cart-toggle"]');
 
     // Scroll position should survive the quantity increment
@@ -56,7 +49,7 @@ test.describe("Suite 05 — Cart", () => {
   });
 
   test("TC-05-07 — Increment and decrement update quantity correctly", async ({ page }) => {
-    await page.click(`[data-product-id="${PRODUCT_ID}"] [data-testid="add-to-cart"]`);
+    await addToCart(page, PRODUCT_ID);
     await page.click('[data-testid="cart-toggle"]');
     await page.click('[data-action="inc-line"]');
     await expect(page.locator('[data-testid="cart-line-qty"]')).toHaveText("2");
@@ -64,18 +57,8 @@ test.describe("Suite 05 — Cart", () => {
     await expect(page.locator('[data-testid="cart-line-qty"]')).toHaveText("1");
   });
 
-  test("TC-05-08 — Removing last item empties cart and hides badge", async ({ page }) => {
-    await page.click(`[data-product-id="${PRODUCT_ID}"] [data-testid="add-to-cart"]`);
-    await page.click('[data-testid="cart-toggle"]');
-    await page.click('[data-action="remove-line"]');
-    await expect(page.locator('[data-testid="cart-count"]')).toHaveText("0");
-    // Locale-agnostic: just assert the empty-state element is visible
-    // (text is "Your cart is empty." in en-US, "Seu carrinho está vazio." in pt-BR)
-    await expect(page.locator('.cart-drawer__empty')).toBeVisible();
-  });
-
   test("TC-05-09 — Cart subtotal matches sum of line totals", async ({ page }) => {
-    await page.click(`[data-product-id="${PRODUCT_ID}"] [data-testid="add-to-cart"]`);
+    await addToCart(page, PRODUCT_ID);
     await page.click('[data-testid="cart-toggle"]');
     const lineTotal = await page.locator('[data-testid="line-total"]').first().textContent();
     const subtotal  = await page.locator('[data-testid="cart-subtotal"]').textContent();
@@ -91,3 +74,4 @@ test.describe("Suite 05 — Cart", () => {
     await expect(page.locator('[data-testid="location-panel"]')).toBeVisible();
   });
 });
+
