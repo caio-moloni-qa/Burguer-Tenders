@@ -1,968 +1,768 @@
-# Burguer-Tenders — Business Rules
+# BeeTee's - Business Rules
 
-> **Scope:** This document describes every business rule enforced by the application, organized by domain. Code snippets reference the actual source files. The main goal of this project is to enforce the usage of automated tests mainly using Playwright.
+> Scope: this document describes the business rules currently enforced by the
+> `react-migration` branch. It supersedes the older `master` rules, which
+> described the pre-migration hand-rendered TypeScript SPA.
+
+---
+
+## Main Changes vs `master`
+
+1. **Branding changed from Burguer-Tenders to BeeTee's.**
+   The header title is now `BeeTee's`, the tagline is `the best of both worlds`,
+   the app uses `/images/app-icon.png`, and store display names use BeeTee's.
+
+2. **The frontend stack migrated to React.**
+   The app now runs through `src/main.tsx` and `src/App.tsx`, uses React 19,
+   MUI components/theme, and Zustand stores in `src/stores/*`. The previous
+   manual HTML rendering modules under `src/ui/*`, old `src/main.ts`, and old
+   module-level stores were removed.
+
+3. **Playwright tests were reorganized.**
+   Tests live under `playwright/tests`, shared data is under
+   `playwright/data`, helpers under `playwright/helpers`, and Page Object Model
+   classes under `playwright/pages`.
+
+4. **Menu interaction changed.**
+   The category filter is a MUI `ToggleButtonGroup` instead of a `<select>`.
+   Search is a collapsible icon-triggered input. A rotating promo banner was
+   added above the menu.
+
+5. **Adding an item now opens a customizer.**
+   Once a valid delivery location exists, clicking "Add to cart" opens an item
+   customizer dialog. The product is only added after the user confirms the
+   customizer.
+
+6. **Cart lines now support customization.**
+   Cart lines are keyed by line id, not only product id. Customized items have
+   unique line ids, store their own `unitPriceUsd`, and keep a
+   `customizationSummary`.
+
+7. **Several old DOM-patching rules no longer apply.**
+   React and Zustand now drive rendering. The previous silent mutation +
+   `patchCartDOM`, `patchDonationSummary`, and caret-restoration rules from
+   `master` are obsolete.
 
 ---
 
 ## Table of Contents
 
 1. [Product Catalog](#1-product-catalog)
-2. [Store Network & Service Areas](#2-store-network--service-areas)
-3. [Delivery Location](#3-delivery-location)
-4. [Cart](#4-cart)
-5. [Checkout Validation](#5-checkout-validation)
-6. [Order Placement](#6-order-placement)
-7. [Navigation & Views](#7-navigation--views)
-8. [Address Geocoding](#8-address-geocoding)
-9. [UI Feedback Rules](#9-ui-feedback-rules)
-10. [Dynamic Translation](#10-dynamic-translation)
-11. [Menu Search](#11-menu-search)
-12. [Tip Option](#12-tip-option)
-13. [Donation](#13-donation)
+2. [Rebrand and Presentation](#2-rebrand-and-presentation)
+3. [Store Network and Service Areas](#3-store-network-and-service-areas)
+4. [Delivery Location](#4-delivery-location)
+5. [Product Customization](#5-product-customization)
+6. [Cart](#6-cart)
+7. [Checkout Validation](#7-checkout-validation)
+8. [Tips and Donations](#8-tips-and-donations)
+9. [Order Placement](#9-order-placement)
+10. [Navigation and UI State](#10-navigation-and-ui-state)
+11. [Address Geocoding](#11-address-geocoding)
+12. [Dynamic Translation and Currency](#12-dynamic-translation-and-currency)
+13. [Automated Test Structure](#13-automated-test-structure)
 
 ---
 
 ## 1. Product Catalog
 
 ### 1.1 Fixed catalog
-The product list is static and defined in `src/data/products.ts`. There is no backend catalog API; all items are available at all times.
 
-| Category | ID | Name | Price | Spicy |
-|---|---|---|---|---|
-| burger | `cheeseburguer` | Cheeseburguer | $3.49 | No |
-| burger | `cheeseburguer-bacon` | Cheeseburguer Bacon | $4.99 | No |
-| burger | `avocado-burger` | Avocado Burguer | $6.49 | No |
-| burger | `bt-special` | BT Special | $7.49 | Yes |
-| tenders | `pack-tenders` | Pack of tenders | $6.99 | No |
-| tenders | `pack-tenders-spicy` | Spicy pack of tenders | $7.49 | Yes |
-| combo | `combo-tenders-cheeseburguer` | Chicken Tenders + Cheeseburguer | $9.99 | No |
-| combo | `combo-bacon-fries` | Cheeseburguer Bacon + Plain Fries | $8.49 | No |
-| combo | `combo-spicy-milkshake` | Spicy Tenders + Chocolate Milkshake | $10.49 | Yes |
-| combo | `combo-tenders-drink` | Tenders + Drink | $8.99 | No |
-| drink | `doctor-bt` | Doctor BT | $2.99 | No |
-| drink | `guarana` | Guaraná | $2.99 | No |
-| side | `fries-plain` | Plain BT French Fries | $3.49 | No |
-| side | `fries-lemon-pepper` | BT Fries — Lemon Pepper | $3.99 | No |
-| side | `milkshake-chocolate` | Chocolate Milkshake | $4.49 | No |
-| side | `milkshake-strawberry` | Strawberry Milkshake | $4.49 | No |
+The catalog is static and defined in `src/data/products.ts`. There is no backend
+catalog API.
+
+| Category | Count | Notes |
+|---|---:|---|
+| `burger` | 4 | Includes `bt-special`, which is spicy |
+| `tenders` | 2 | Includes `pack-tenders-spicy`, which is spicy |
+| `combo` | 4 | Includes `combo-spicy-milkshake`, which is spicy |
+| `drink` | 2 | Includes `doctor-bt` and `guarana` |
+| `side` | 4 | Includes fries and milkshakes |
+
+The full catalog still contains 16 products. Product ids and prices remain the
+same as `master`.
 
 ### 1.2 Product shape
-Every product must have: `id`, `name`, `shortName`, `description`, `imageSrc`, `priceUsd`, `category`, and `spicy` (boolean).
+
+Every product must expose:
 
 ```ts
-// src/types/product.ts
-export type ProductCategory = "burger" | "tenders" | "combo" | "drink" | "side";
-
-export type Product = {
+type Product = {
   id: string;
   name: string;
   shortName: string;
   description: string;
-  imageSrc: string;       // public URL path, e.g. /images/products/cheeseburguer.png
-  priceUsd: number;       // USD — display only, not a billing engine
-  category: ProductCategory;
+  imageSrc: string;
+  priceUsd: number;
+  category: "burger" | "tenders" | "combo" | "drink" | "side";
   spicy: boolean;
 };
 ```
 
+`priceUsd` remains the canonical stored amount. Localized display conversion is
+handled separately by `src/i18n/locale.ts`.
+
 ### 1.3 Spicy badge
-Products with `spicy: true` display an uppercase "SPICY" badge on the product card. No other visual distinction is applied.
 
-### 1.4 Prices are in USD
-All prices are stored as `number` in USD and formatted with `Intl.NumberFormat`:
+Products with `spicy: true` display a MUI `Chip` with a fire icon and localized
+text:
 
-```ts
-// src/ui/cartHtml.ts
-export function formatPrice(usd: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(usd);
-}
-```
+- English: `Spicy`
+- Portuguese: `Picante`
 
-### 1.5 Category filter
-The menu toolbar exposes a `<select>` dropdown that filters the product grid by category. The available options are **All**, **Burgers**, **Tenders**, **Combos**, **Drinks**, and **Sides**. The selected filter persists across re-renders (cart updates, location saves, etc.) via a module-level variable in `src/ui/menu.ts`.
+No other product availability rule depends on `spicy`.
 
-```ts
-// src/ui/menu.ts
-type MenuFilter = "all" | ProductCategory;
-let activeFilter: MenuFilter = "all";
+### 1.4 Category filtering
 
-export function setMenuFilter(filter: string): void { … }
+The menu category filter is a MUI `ToggleButtonGroup`, not a native select. It
+offers these filter values:
 
-// In renderMenu — products are filtered before mapping to HTML:
-const filtered = activeFilter === "all"
-  ? items
-  : items.filter((p) => p.category === activeFilter);
-```
+| Value | Meaning |
+|---|---|
+| `all` | All 16 products |
+| `burger` | Burger products only |
+| `tenders` | Tender products only |
+| `combo` | Combo products only |
+| `drink` | Drink products only |
+| `side` | Side products only |
 
-Changing the select fires a `change` event handled in `main.ts`, which calls `setMenuFilter` and then `render()`.
+The selected filter is stored in `useUiStore.menuFilter` and survives normal
+React re-renders, drawer open/close, and location updates.
+
+### 1.5 Menu search
+
+Menu search is collapsed by default. Clicking the search icon opens the input
+and focuses it.
+
+Search rules:
+
+- Search text is stored lowercased in `useUiStore.menuSearch`.
+- It matches `product.name` and `product.description`.
+- Matching is case-insensitive and accent-sensitive.
+- Category filtering runs first; search narrows the category-filtered result.
+- Closing search clears the query.
+
+If no products match the active category and search query, the menu shows the
+localized empty-state message.
 
 ---
 
-## 2. Store Network & Service Areas
+## 2. Rebrand and Presentation
 
-### 2.1 Active stores
+### 2.1 Brand
+
+The active brand is **BeeTee's**.
+
+Header rules:
+
+- The header brand uses `/images/app-icon.png`.
+- The visible title is `BeeTee's`.
+- The tagline is `the best of both worlds`.
+- Clicking the brand returns to the menu view.
+
+### 2.2 Theme and UI framework
+
+The UI is built with MUI components and a custom dark BeeTee's theme in
+`src/theme.ts`. Core state is managed with Zustand stores:
+
+| Store | Responsibility |
+|---|---|
+| `useUiStore` | View, filters, search, toast, spinner, customizer, pending add |
+| `useCartStore` | Cart lines and cart drawer state |
+| `useLocationStore` | Delivery draft, saved/synced state, lookup status, location drawer |
+| `useCheckoutStore` | Checkout form, validation errors, confirmed customer name |
+
+### 2.3 Promo banner
+
+The menu page includes a rotating promo banner with three slides:
+
+| Promo id | Headline | Asset |
+|---|---|---|
+| `combo` | `Protein is never enough.` | `/images/promos/promo-combo.jpg` |
+| `spicy` | `Turn up the heat.` | `/images/promos/promo-spicy.jpg` |
+| `delivery` | `Free delivery over $25.` | `/images/promos/promo-delivery.jpg` |
+
+The banner rotates every 5.5 seconds unless the user hovers/focuses it or the
+browser prefers reduced motion. Dots let the user select a slide manually.
+
+---
+
+## 3. Store Network and Service Areas
+
+### 3.1 Active stores
 
 | Store ID | Display Name | Country | City | State |
 |---|---|---|---|---|
-| `br-londrina-higienopolis` | Burguer-Tenders Higienopolis | BR | Londrina | PR |
-| `br-sp-pinheiros` | Burguer-Tenders Pinheiros | BR | São Paulo | SP |
-| `us-ny-midtown` | Burguer-Tenders Midtown | US | New York | NY |
+| `br-londrina-higienopolis` | `BeeTee's Higienopolis` | BR | Londrina | PR |
+| `br-sp-pinheiros` | `BeeTee's Pinheiros` | BR | Sao Paulo | SP |
+| `us-ny-midtown` | `BeeTee's Midtown` | US | New York | NY |
+
+Only the display names changed from `master`; ids and service areas are still
+the same.
+
+### 3.2 Store resolution
+
+A store is matched by:
+
+1. Country code.
+2. City.
+3. State.
+
+City matching is accent-insensitive, case-insensitive, trimmed, and whitespace
+normalized. State matching is canonicalized:
+
+- Brazil uses the two-letter UF code.
+- United States accepts either a two-letter state code or known full state name.
+
+### 3.3 No cross-country matching
+
+A Brazilian store never serves a US address, and a US store never serves a
+Brazilian address.
+
+### 3.4 No store means no delivery
+
+If an address does not resolve to a known store, the user cannot save the
+location. The app shows an alert and keeps the location drawer open.
+
+---
+
+## 4. Delivery Location
+
+### 4.1 Location is required before cart customization
+
+A user cannot customize or add a product without a valid saved delivery
+location.
+
+When the user clicks "Add to cart" without a saved location:
+
+1. `pendingAddProductId` is set in `useUiStore`.
+2. The cart drawer is closed if it is open.
+3. The location drawer opens.
+
+After the user saves a valid location, the app opens the customizer for the
+pending product instead of adding it directly.
+
+### 4.2 Valid saved location
+
+A delivery location is considered valid only when all conditions are true:
 
 ```ts
-// src/data/stores.ts
-export const STORES: readonly StoreDefinition[] = [
-  {
-    id: "br-londrina-higienopolis",
-    displayName: "Burguer-Tenders Higienopolis",
-    countryCode: "BR",
-    serviceAreas: [{ city: "Londrina", state: "PR" }],
-  },
-  {
-    id: "br-sp-pinheiros",
-    displayName: "Burguer-Tenders Pinheiros",
-    countryCode: "BR",
-    serviceAreas: [{ city: "São Paulo", state: "SP" }],
-  },
-  {
-    id: "us-ny-midtown",
-    displayName: "Burguer-Tenders Midtown",
-    countryCode: "US",
-    serviceAreas: [{ city: "New York", state: "NY" }],
-  },
-];
+syncedWithServer === true
+delivery.zipCode.trim().length > 0
+delivery.storeId.trim().length > 0
 ```
 
-### 2.2 Store resolution
-A store is matched to a delivery address by **country code + city + state**. Matching is accent-insensitive and case-insensitive.
+This logic lives in `selectHasDeliveryLocation`.
 
-```ts
-// src/data/stores.ts
-function normalizeCity(s: string): string {
-  return s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
-}
+### 4.3 Draft state
+
+Typing in the location drawer updates `useLocationStore.delivery`, clears the
+lookup error, recomputes the store id from city/state/country, and marks the
+delivery as not synced with the server.
+
+The location becomes saved only after a successful `POST /api/delivery`.
+
+### 4.4 Session persistence
+
+Delivery data is persisted server-side per session cookie. On app mount,
+`useInitialDelivery()` calls `GET /api/delivery`; if a saved delivery exists, it
+hydrates the location store and sets the locale from the saved country.
+
+### 4.5 Country selector
+
+The location drawer country selector supports:
+
+- `US` - United States
+- `BR` - Brazil
+
+Changing the country immediately updates the visible store list and invalidates
+the synced location until the user saves again.
+
+### 4.6 ZIP auto-lookup
+
+The ZIP field triggers lookup on blur when the postal code has a complete shape:
+
+| Country | Trigger |
+|---|---|
+| BR | Exactly 8 digits |
+| US and others | Exactly 5 digits |
+
+The manual "Look up address" button can also start lookup. If a lookup is
+already in progress, additional lookup attempts are ignored.
+
+### 4.7 Save button timing
+
+While lookup is running, the Save button is disabled and shows a loading state.
+After lookup ends, save remains disabled for 500 ms before being released.
+
+---
+
+## 5. Product Customization
+
+### 5.1 Customizer opening
+
+With a valid saved location, clicking a product's "Add to cart" button opens
+`ItemCustomizerDialog`. The cart is not changed until the user clicks the
+customizer's add button.
+
+### 5.2 Customizer reset
+
+Whenever a different product is opened, the customizer resets to:
+
+- `pattyCount = 1`
+- No selected extras
+- `quantity = 1`
+
+### 5.3 Burger patties
+
+Only burgers expose patty selection.
+
+| Patties | Upcharge |
+|---:|---:|
+| 1 | $0.00 |
+| 2 | $2.00 |
+| 3 | $4.00 |
+
+The selected patty count is included in the cart customization summary.
+
+### 5.4 Add-ons
+
+Add-ons are category-specific:
+
+| Category | Add-ons |
+|---|---|
+| Burger | Everything style, extra cheese, bacon, grilled onions, jalapenos |
+| Tenders | Extra sauce, spicy dust, large pack |
+| Combo | Large drink, loaded fries, extra sauce |
+| Side | Large size, extra seasoning, dipping sauce |
+| Drink | Large size, no ice |
+
+Each selected add-on contributes its configured USD upcharge to the unit price.
+`no-ice` is allowed and costs $0.00.
+
+### 5.5 Customizer pricing
+
+The customizer calculates:
+
+```text
+unit price = product.priceUsd + patty upcharge + selected add-ons
+line total = unit price * quantity
 ```
 
-- For **Brazil (BR)**: state is stored as 2-letter UF code (e.g. `PR`, `SP`).
-- For **USA (US)**: Nominatim may return either the 2-letter code (`NY`) or full name (`New York`). Both are normalized to the 2-letter code.
+The displayed amount uses `formatPrice`, so it follows the active locale and
+currency.
+
+### 5.6 Adding customized products
+
+Customized products are added through `addCustomizedProduct`. Each customized
+line receives a unique line id and does not merge into an existing product line,
+even if the same base product was already in the cart.
+
+---
+
+## 6. Cart
+
+### 6.1 Cart line shape
+
+Cart lines are stored in `useCartStore.linesById`:
 
 ```ts
-// src/data/stores.ts
-const US_STATE_NAME_TO_CODE: Record<string, string> = {
-  "new york": "NY", california: "CA", texas: "TX",
-  florida: "FL", illinois: "IL",
+type CartLine = {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitPriceUsd: number;
+  customizationSummary: string[];
 };
 ```
 
-### 2.3 No cross-country matching
-A BR store never matches a US address and vice versa. The first filter in `resolveStoreForDelivery` is `store.countryCode !== cc`.
+Plain products may use the product id as the line id. Customized products use a
+generated unique line id.
 
-### 2.4 No store → no delivery
-If no store serves the resolved city/state, the user **cannot save** the location. An alert is shown and the panel stays open.
+### 6.2 Quantity management
 
-```ts
-// src/main.ts
-if (!locationDelivery.storeId.trim()) {
-  window.alert(
-    "We don't deliver to this address yet. Use a ZIP in an area we serve…"
-  );
-  return;
-}
+Quantity actions operate on line id:
+
+- Increment increases that line quantity by 1.
+- Decrement decreases that line quantity by 1.
+- If quantity reaches 0, the line is removed.
+- Remove deletes the whole line regardless of quantity.
+
+### 6.3 Cart subtotal
+
+Subtotal is calculated from cart lines, not from the base catalog price:
+
+```text
+subtotal = sum(line.unitPriceUsd * line.quantity)
 ```
+
+This is required so customized items include their add-on and patty upcharges.
+No tax, delivery fee, or service fee is added.
+
+### 6.4 Checkout blocking
+
+The "Go to checkout" button is disabled when there are no cart lines.
+
+If the cart has items but there is no valid saved delivery location, clicking
+"Go to checkout" closes the cart drawer and opens the location drawer.
+
+### 6.5 Checkout transition
+
+Going to checkout closes the cart drawer, shows the page spinner, waits 750 ms,
+copies the saved delivery ZIP into the checkout ZIP if the checkout field is
+empty, then switches to the checkout view.
+
+### 6.6 Cart badge
+
+The header cart icon uses a MUI badge. It displays the current total item count,
+including `0`. When the total is zero, the badge is marked `aria-hidden`.
+
+### 6.7 Clearing cart
+
+The cart is cleared after a valid order submission, before switching to the
+confirmation view.
 
 ---
 
-## 3. Delivery Location
+## 7. Checkout Validation
 
-### 3.1 Location is required before adding to cart
-A user cannot add a product to the cart without a saved delivery location. Attempting to do so opens the location panel instead and stores the intended product as `pendingAddProductId`.
+All checkout validation is client-side and runs on form submit. The first
+invalid field receives focus.
 
-```ts
-// src/main.ts — handleCartAction
-case "add-to-cart":
-  if (!hasDeliveryLocation()) {
-    pendingAddProductId = productId;
-    openLocationPanel();
-    return;
-  }
-  cart.addProductSilent(productId, 1);
-  patchCartDOM();
-```
-
-### 3.2 `hasDeliveryLocation` — three conditions
-A delivery location is considered **valid and saved** only when all three are true:
-
-```ts
-// src/location/location.ts
-export function hasDeliveryLocation(): boolean {
-  return (
-    deliverySyncedWithServer &&                    // POSTed to server at least once
-    locationDelivery.zipCode.trim().length > 0 &&  // ZIP is non-empty
-    locationDelivery.storeId.trim().length > 0     // resolves to a known store
-  );
-}
-```
-
-### 3.3 Delivery state is draft until saved
-Typing in the location panel updates an in-memory draft (`locationDelivery` object) and sets `deliverySyncedWithServer = false`. The state only becomes valid after a successful `POST /api/delivery`.
-
-### 3.4 Pending add after location save
-If a user tried to add a product before setting a location and then saves the location, the pending product is added automatically and a toast is shown.
-
-```ts
-// src/main.ts
-if (pendingAddProductId) {
-  const name = getProductById(pendingAddProductId)?.name ?? "Item";
-  cart.addProductSilent(pendingAddProductId, 1);
-  pendingAddProductId = null;
-  showCartToast(name);
-}
-```
-
-### 3.5 Auto-lookup on ZIP blur
-When the ZIP input loses focus and contains a valid-length ZIP (8 digits for BR, 5 digits for US), an address lookup is triggered automatically — **unless** the user is clicking the "Look up address" button, in which case the button click is the sole driver to avoid a parallel-request race.
-
-```ts
-// src/main.ts
-root.addEventListener("focusout", (ev) => {
-  if (!target?.matches("#location-zip")) return;
-  // Suppress auto-trigger when clicking the lookup button directly.
-  const related = (ev as FocusEvent).relatedTarget as HTMLElement | null;
-  if (related?.closest("[data-action='lookup-address']")) return;
-  if (!shouldAutoLookupPostal(locationDelivery.zipCode, locationDelivery.countryCode)) return;
-  void runPostalLookup();
-});
-```
-
-### 3.6 Session persistence
-The delivery payload (including `storeId`) is persisted server-side per session cookie (`bt_sid`). On page load, `GET /api/delivery` restores the saved address.
-
-### 3.7 Country selector drives the store list
-The location panel shows only the stores available for the **currently selected country**. Changing the country select causes an immediate re-render of the store list.
-
-### 3.8 Checkout ZIP fallback
-On the checkout page, if the checkout ZIP field is empty, the saved delivery ZIP is used automatically.
-
-```ts
-// src/main.ts — go-checkout case
-if (!checkoutForm.zipCode.trim() && locationDelivery.zipCode.trim()) {
-  checkoutForm.zipCode = locationDelivery.zipCode;
-}
-```
-
----
-
-## 4. Cart
-
-### 4.1 Quantity management
-- **Add:** increments quantity by 1 per click.
-- **Increment (＋):** same as add.
-- **Decrement (−):** reduces by 1; if quantity reaches 0 the line is removed.
-- **Remove:** deletes the line entirely regardless of quantity.
-
-### 4.2 Cart mutations use silent variants inside the open drawer
-To prevent the cart panel from re-rendering on every add/remove/decrement, all quantity mutations that happen while the drawer is open use **silent** variants that do not call `emit()`. After the silent mutation, `patchCartDOM()` surgically updates the three affected DOM regions:
-
-```ts
-// src/cart/cartStore.ts — silent variants (no emit)
-addProductSilent(productId: string, amount = 1): void { … }
-setQuantitySilent(productId: string, quantity: number): void { … }
-removeLineSilent(productId: string): void { … }
-```
-
-```ts
-// src/main.ts
-function patchCartDOM(): void {
-  // 1. Re-render the lines list inside the drawer body
-  const body = document.querySelector(".cart-drawer__body");
-  if (body) body.innerHTML = renderCartLines(cart);
-
-  // 2. Replace the subtotal/CTA footer in-place
-  const foot = document.querySelector(".cart-drawer__foot");
-  if (foot) { /* replaceWith new footer element */ }
-
-  // 3. Update the header badge count and visibility
-  const badge = document.querySelector("[data-testid='cart-count']");
-  if (badge) { /* update textContent and classes */ }
-}
-```
-
-The emitting variants (`addProduct`, `setQuantity`, `removeLine`) are still used by `clear()` (called after order placement) which requires a full re-render.
-
-### 4.3 Cart is cleared on confirmed order
-When the user successfully places an order, `cart.clear()` is called before navigating to the confirmation page.
-
-```ts
-// src/main.ts — submit handler
-confirmedUserName = checkoutForm.fullName.trim();
-cart.clear();
-setView("confirmation");
-```
-
-### 4.4 Go to checkout blocked on empty cart
-The "Go to checkout" button is disabled when the cart has no items:
-
-```ts
-// src/ui/cartHtml.ts
-<button … ${hasItems ? "" : "disabled"}>Go to checkout</button>
-```
-
-### 4.5 Go to checkout blocked without location
-If the user has no saved delivery location when clicking "Go to checkout", the location panel opens instead.
-
-```ts
-// src/main.ts
-case "go-checkout":
-  if (!hasDeliveryLocation()) {
-    openLocationPanel();
-    return;
-  }
-```
-
-### 4.6 Subtotal calculation
-The subtotal is the sum of `priceUsd × quantity` for every line in the cart. No taxes or fees are added (demo).
-
-```ts
-// src/ui/cartHtml.ts
-export function cartSubtotal(cart: CartStore): number {
-  let total = 0;
-  for (const line of cart.getLines()) {
-    const p = getProductById(line.productId);
-    if (p) total += p.priceUsd * line.quantity;
-  }
-  return total;
-}
-```
-
----
-
-## 5. Checkout Validation
-
-All validation runs client-side on form submit. The first invalid field receives focus automatically.
-
-### 5.1 Required fields (always)
+### 7.1 Always required
 
 | Field | Rule |
 |---|---|
 | Full name | Must not be blank |
-| Email | Must contain `@` with at least one character before it, and a domain with a `.` after `@` |
-| ZIP / Postal code | The checkout ZIP or the saved delivery ZIP must be non-empty |
+| Email | Must contain `@`, at least one character before it, and a domain containing `.` |
+| ZIP / postal code | Checkout ZIP or saved delivery ZIP must be non-empty |
 
-```ts
-// src/checkout/validateCheckout.ts
-function isValidEmail(s: string): boolean {
-  const at = s.trim().indexOf("@");
-  if (at < 1) return false;
-  const domain = s.trim().slice(at + 1);
-  return domain.length > 0 && domain.includes(".");
-}
-```
+### 7.2 Card fields
 
-### 5.2 Card fields — conditional (payment method = "card")
+Card fields are required only when `paymentMethod === "card"`.
 
-| Field | Required | Format rule |
-|---|---|---|
-| Name on card | Yes | Letters (including accented), spaces, hyphens, and apostrophes only — no digits or other special characters |
-| Card number | Yes | 13–19 digits (spaces stripped); auto-formatted as `XXXX XXXX XXXX XXXX` while typing |
-| Expiry | Yes | `MM / YY` format; month must be 01–12; date must not be in the past |
-| Security code (CVC) | Yes | Exactly 3 or 4 digits; rendered as `type="password"` |
-
-```ts
-// src/checkout/validateCheckout.ts
-
-function isValidCardName(s: string): boolean {
-  return /^[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+$/.test(s.trim());
-}
-
-function isValidCardNumber(s: string): boolean {
-  const digits = s.replace(/\s/g, "");
-  return /^\d{13,19}$/.test(digits);
-}
-
-function isValidExpiry(s: string): boolean {
-  const digits = s.replace(/\D/g, "");
-  if (digits.length !== 4) return false;
-  const month = parseInt(digits.slice(0, 2), 10);
-  const year  = parseInt(digits.slice(2, 4), 10) + 2000;
-  if (month < 1 || month > 12) return false;
-  return new Date(year, month) > new Date(); // card valid through end of expiry month
-}
-
-function isValidCvc(s: string): boolean {
-  return /^\d{3,4}$/.test(s.trim());
-}
-```
-
-### 5.3 Real-time card input formatting
-Card inputs are cleaned and formatted on every `input` event — before the value is stored in `checkoutForm`. No re-render is triggered; only `el.value` is updated in-place.
-
-| Field | Transformation |
+| Field | Rule |
 |---|---|
-| Name on card | Strip any character that is not a letter, space, hyphen, or apostrophe |
-| Card number | Strip non-digits → cap at 16 → group into blocks of 4 with spaces |
-| Expiry | Strip non-digits → cap at 4 → format as `MM / YY` |
-| Security code | Strip non-digits → cap at 4 |
+| Name on card | Letters, accented letters, spaces, hyphens, apostrophes |
+| Card number | 13 to 19 digits after spaces are stripped |
+| Expiry | `MM / YY`, month 01-12, not expired |
+| CVC | Exactly 3 or 4 digits; rendered as password input |
 
-```ts
-// src/main.ts — input event handler (card fields excerpt)
-} else if (field === "cardNumber") {
-  const digits = value.replace(/\D/g, "").slice(0, 16);
-  const formatted = digits.match(/.{1,4}/g)?.join(" ") ?? digits;
-  el.value = formatted;
-  checkoutForm.cardNumber = formatted;
-} else if (field === "cardExpiry") {
-  const digits = value.replace(/\D/g, "").slice(0, 4);
-  const formatted = digits.length > 2
-    ? `${digits.slice(0, 2)} / ${digits.slice(2)}`
-    : digits;
-  el.value = formatted;
-  checkoutForm.cardExpiry = formatted;
-}
-```
+### 7.3 Real-time formatting
 
-### 5.4 Payment methods
-Two options: `"card"` (default) and `"pay-in-restaurant"`. Switching to "pay in restaurant" clears any existing card validation errors immediately.
+Card field formatters live in `src/checkout/formatters.ts`.
 
-### 5.5 Validation error display
-Inline error messages appear below each invalid field. Fields also receive a red border + light-red background. Errors are cleared field-by-field as the user types.
-
-### 5.6 Focus order on error
-The browser focus is sent to the first invalid field in this fixed order: `fullName` → `email` → `zipCode` → `cardNameOnCard` → `cardNumber` → `cardExpiry` → `cardCvc`.
-
----
-
-## 6. Order Placement
-
-### 6.1 Checkout delivery data (read-only)
-The checkout page shows the full saved delivery address in non-editable inputs. The user cannot change the delivery address from the checkout page; they must go back to the menu and use the location panel.
-
-### 6.2 Estimated delivery time
-Every confirmed order shows a fixed **30-minute** ETA. This is a training demo value and is not dynamic.
-
-### 6.3 Confirmation page content
-After a successful order:
-- Personalised greeting: **"Thank you, [Name]!"**
-- Animated green check circle
-- ETA pill (clock icon + "Estimated delivery: 30 min")
-- Full delivery address block (same fields as checkout: ZIP, street, neighborhood, city/state, country, complement)
-- The fulfilling store name is displayed above the address fields
-
-### 6.4 Cart cleared on confirmation
-The cart is emptied immediately when `setView("confirmation")` is called — before rendering the confirmation page.
-
----
-
-## 7. Navigation & Views
-
-### 7.1 Three views
-The SPA has exactly three views:
-
-```ts
-// src/navigation.ts
-export type AppView = "shop" | "checkout" | "confirmation";
-```
-
-| View | Shown when |
+| Field | Formatting |
 |---|---|
-| `shop` | Default / after "Back to menu" |
-| `checkout` | After "Go to checkout" (750 ms spinner delay) |
-| `confirmation` | After successful order submit |
+| Name on card | Removes unsupported characters |
+| Card number | Keeps 16 digits max, groups as `XXXX XXXX XXXX XXXX` |
+| Expiry | Keeps 4 digits max, displays as `MM / YY` |
+| CVC | Keeps 4 digits max |
 
-### 7.2 Header brand is always a home link
-The logo and site title in the header are wrapped in a `<button data-action="go-home">`. Clicking it from any view returns the user to `shop`, clears checkout validation errors, closes any open drawers, and clears `pendingAddProductId`.
+### 7.4 Payment methods
 
-### 7.3 Checkout transition has a loading delay
-Clicking "Go to checkout" triggers a 750 ms full-screen spinner overlay before the view changes, giving visual feedback that something is happening.
+Two payment methods exist:
 
-### 7.4 Escape key closes panels
-Pressing `Escape` closes the location panel first (if open), then the cart drawer (if open). One key press, one action.
+- `card` (default)
+- `pay-in-restaurant`
 
-```ts
-// src/main.ts
-document.addEventListener("keydown", (ev) => {
-  if (ev.key !== "Escape") return;
-  if (getLocationPanelOpen()) { closeLocationPanel(); return; }
-  if (cart.isDrawerOpen()) { cart.closeDrawer(); }
-});
-```
+Switching to `pay-in-restaurant` immediately clears card-field validation
+errors.
 
-### 7.5 Only one panel open at a time
-Opening the cart closes the location panel, and vice versa.
+### 7.5 Error display and focus order
 
-```ts
-// src/main.ts
-case "toggle-cart":
-  if (getLocationPanelOpen()) closeLocationPanel();
-  cart.toggleDrawer();
-  break;
-case "toggle-location":
-  if (cart.isDrawerOpen()) cart.closeDrawer();
-  toggleLocationPanel();
-  break;
+Errors are stored in `useCheckoutStore.errors` and displayed as MUI `TextField`
+helper text.
+
+Focus order:
+
+```text
+fullName -> email -> zipCode -> cardNameOnCard -> cardNumber -> cardExpiry -> cardCvc
 ```
 
 ---
 
-## 8. Address Geocoding
+## 8. Tips and Donations
 
-### 8.1 Geocoding providers by country
+### 8.1 Tip presets
 
-| Country | Primary | Fallback |
-|---|---|---|
-| Brazil (`BR`) | **ViaCEP** (full national CEP database, no API key) | OpenStreetMap Nominatim |
-| All others | **Nominatim** (OpenStreetMap) | — |
+The order summary offers four mutually exclusive tip choices:
 
-ViaCEP is preferred for Brazil because Nominatim frequently lacks CEP centroid data.
+| Label | Stored value |
+|---|---:|
+| No tip | 0 |
+| 10% | 10 |
+| 15% | 15 |
+| 20% | 20 |
 
-### 8.2 Nominatim retry strategy (Brazil)
-For BR, up to five query shapes are attempted with 350 ms delays between them to respect Nominatim's rate limit (~1 req/s):
+Tip amount is calculated from the items subtotal before donation:
 
-```js
-// server/index.mjs
-attempts.push({ postalcode: normalized, countrycodes: "br" });
-attempts.push({ postalcode: digits,     countrycodes: "br" });
-attempts.push({ q: `${digits}, Brasil`, countrycodes: "br" });
-attempts.push({ q: `${normalized}, Brasil`, countrycodes: "br" });
-attempts.push({ q: digits,              countrycodes: "br" });
+```text
+tip amount = subtotal * tipPercent / 100
 ```
 
-### 8.3 Postal code normalization
-- **BR:** raw digits are formatted as `XXXXX-XXX` for display; lookups use the 8-digit form.
-- **US:** ZIP+4 (`12345-6789`) is stripped to 5 digits.
+### 8.2 Donation beneficiary
 
-### 8.4 Auto-trigger threshold
+The beneficiary is `Associacao de doacoes Teste` in business meaning, defined in
+code as `DONATION_ASSOCIATION`.
 
-| Country | Trigger |
-|---|---|
-| Brazil | Exactly **8 digits** entered in ZIP field |
-| USA | Exactly **5 digits** entered in ZIP field |
+### 8.3 Donation modes
 
-The lookup fires automatically when the ZIP field loses focus — unless focus is moving to the "Look up address" button, in which case the button click drives the lookup. The user can always click "Look up address" manually.
+Only one donation mode can be active at a time:
 
-### 8.5 No API key required
-Both ViaCEP and Nominatim are free and keyless. Nominatim requires a descriptive `User-Agent` header (configurable via `NOMINATIM_USER_AGENT` env var).
+- `none`
+- `fixed`
+- `percent`
 
----
+Default is `none`.
 
-## 9. UI Feedback Rules
-
-### 9.1 Add-to-cart toast
-A green bottom toast appears for **2.5 seconds** with a 350 ms fade-out whenever a product is successfully added to the cart.
-
-```ts
-// src/ui/toast.ts
-el.textContent = `${itemName} was successfully added to cart!`;
-// auto-hides after HIDE_AFTER_MS = 2500ms
-```
-
-If another item is added while the toast is visible, the timer resets and the message updates in place.
-
-### 9.2 Store banner on menu
-Once a location is saved (and resolves to a known store), a banner appears above the product grid:
-
-> **Ordering from** Burguer-Tenders Pinheiros
-
-The banner is shown as long as `locationDelivery.storeId` is non-empty, independent of the full `hasDeliveryLocation()` check.
-
-### 9.3 Location panel store status
-The location panel shows a live status under the ZIP row:
-
-| State | Message |
-|---|---|
-| No city/state yet | "Enter your ZIP and use Look up address…" |
-| City/state resolved, no matching store | "We don't deliver to this city yet." |
-| Matching store found | "Delivery available from **[Store Name]**" |
-
-This status updates when address lookup completes or when the country select changes — not on every keystroke.
-
-### 9.4 Lookup button disabled during request
-While `runPostalLookup` is in flight, the button is disabled and its label changes to "Looking up…". This is achieved by direct DOM mutation (no full re-render):
-
-```ts
-// src/main.ts
-btn.disabled = opts.loading;
-btn.textContent = opts.loading ? "Looking up…" : "Look up address";
-```
-
-### 9.5 No re-render while typing in panels or mutating the cart
-Several strategies are used to avoid unnecessary full re-renders:
-
-| Trigger | Strategy |
-|---|---|
-| Typing in the location panel | `clearLookupErrorSilent()` — updates state without `emit()` |
-| Typing in card/checkout fields | Direct `checkoutForm` mutation only, no `emit()` |
-| Adding/removing items in the open cart drawer | Silent cart mutations + `patchCartDOM()` — patches only the 3 affected DOM nodes |
-| Typing in a donation custom field | `patchDonationSummary(cart)` — patches only the totals rows; the `<input>` is never replaced so the cursor stays in place |
-| Country select change in location panel | `emitLocationChange()` — triggers a deliberate re-render |
-| Address lookup completion | `emitLocationChange()` — single clean re-render after all state is updated |
-
-### 9.6 Cart badge count
-The cart icon in the header shows a yellow badge with the total item count when the cart is non-empty. The badge is hidden when the cart is empty. It is updated by `patchCartDOM()` on every cart mutation, so it always reflects the live count without a full page re-render.
-
-### 9.7 Browser tab favicon
-The application displays a custom burger SVG icon in the browser tab, defined in `public/favicon.svg` and linked via `<link rel="icon" type="image/svg+xml" href="/favicon.svg" />` in `index.html`.
-
-### 9.8 Category filter empty state
-If no products exist in the selected category, the product grid shows a centered placeholder message:
-
-```html
-<p class="menu__empty">No items in this category yet.</p>
-```
-
----
-
-## 10. Dynamic Translation
-
-### 10.1 Overview
-When a user looks up an address and the result resolves to a known store, the entire UI switches language and currency to match the store's country. There are two supported locales:
-
-| Country | Locale | Currency |
-|---|---|---|
-| United States (`US`) | `en-US` (English) | USD (`$`) |
-| Brazil (`BR`) | `pt-BR` (Portuguese) | BRL (`R$`) |
-
-The locale module lives in `src/i18n/locale.ts` and is the single source of truth for all translatable strings and price formatting.
-
-### 10.2 Trigger: "Look up address" button
-Translation is triggered automatically after the "Look up address" button is clicked and the geocoding response resolves to a city served by a known store.
-
-```ts
-// src/main.ts — runPostalLookup (success path)
-syncResolvedStoreFromAddress();
-lookupLoadingEnd();
-
-// If a store was resolved, apply the locale and do a full re-render.
-if (locationDelivery.storeId) {
-  setLocale(locationDelivery.countryCode);
-  emitLocationChange();   // triggers render() across the whole UI
-  return;
-}
-```
-
-If the looked-up city does not match any store, the locale is **not** changed and the standard `patchLookupDOM` path runs as usual.
-
-### 10.3 Session restore
-When the page loads and a previously saved delivery is hydrated from the session cookie, the locale is restored before the first render so the UI appears in the correct language immediately on reload.
-
-```ts
-// src/main.ts — fetchDelivery bootstrap
-if (d.countryCode) {
-  setLocale(d.countryCode);
-}
-render();
-```
-
-### 10.4 Scope of translation
-Every user-visible string in the application is routed through `t(key)`. The following areas are translated:
-
-| Area | Examples |
-|---|---|
-| Menu page | "Available to buy" → "Disponível para compra", category filter options, "Add to cart" → "Adicionar ao carrinho", "Spicy" → "Picante" |
-| Menu search | "Search" → "Buscar", placeholder "Search items…" → "Buscar itens…" |
-| Cart drawer | "Cart" → "Carrinho", "Your cart is empty." → "Seu carrinho está vazio.", "Go to checkout" → "Ir para o pagamento" |
-| Checkout page | All field labels, fieldset legends, payment options, "Place order" → "Fazer pedido" |
-| Checkout tip | "Tip" → "Gorjeta", "No tip" → "Sem gorjeta", "Total" → "Total" |
-| Checkout donation | "Donation to" → "Doação para", "No donation" → "Sem doação", "Fixed amount" → "Valor fixo", "% of order" → "% do pedido", "Custom" → "Personalizado" |
-| Confirmation page | "Thank you, {name}!" → "Obrigado(a), {name}!", "Your order is placed!" → "Seu pedido foi realizado!", "Back to menu" → "Voltar ao menu" |
-| Location panel | All labels, status messages, button text ("Look up address" → "Buscar endereço", "Save location" → "Salvar localização") |
-| Add-to-cart toast | "{item} was successfully added to cart!" → "{item} foi adicionado ao carrinho com sucesso!" |
-| Header | ARIA labels for the location and cart icon buttons |
-
-### 10.5 Currency formatting
-Prices are stored as `priceUsd` (USD). The `formatPrice(usd)` function in `src/i18n/locale.ts` replaces the original static formatter from `cartHtml.ts`:
-
-```ts
-// src/i18n/locale.ts
-const USD_TO_BRL = 5.7;
-
-export function formatPrice(usd: number): string {
-  if (activeLocale === "pt-BR") {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(usd * USD_TO_BRL);
-  }
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(usd);
-}
-```
-
-- For **US**: price is shown in USD, e.g. `$3.49`.
-- For **BR**: price is converted using a fixed rate (`× 5.7`) and displayed in BRL format, e.g. `R$\u00a019,89`. This is a training-demo value and is not a live exchange rate.
-
-The same `formatPrice` is used in every context where a price appears: product cards, cart lines, cart subtotal, checkout order summary, and checkout subtotal.
-
-### 10.6 Translation API
-```ts
-// src/i18n/locale.ts
-
-export type Locale = "en-US" | "pt-BR";
-
-export function setLocale(countryCode: string): void { … }
-export function getLocale(): Locale { … }
-
-/**
- * Returns the translated string for `key` in the active locale.
- * `vars` replaces {placeholder} tokens, e.g. t("confirmTitle", { name: "Alice" }).
- */
-export function t(key: TranslationKey, vars?: Record<string, string>): string { … }
-export function formatPrice(usd: number): string { … }
-```
-
-String keys with dynamic content use `{placeholder}` tokens:
-
-| Key | EN value | PT value |
-|---|---|---|
-| `confirmTitle` | `"Thank you, {name}!"` | `"Obrigado(a), {name}!"` |
-| `confirmEta` | `"Estimated delivery: {time}"` | `"Entrega estimada: {time}"` |
-| `locationStoreAvailable` | `"Delivery available from {store}"` | `"Entrega disponível por {store}"` |
-| `toastAddedToCart` | `"{item} was successfully added to cart!"` | `"{item} foi adicionado ao carrinho com sucesso!"` |
-
-### 10.7 No re-render while typing
-The locale switch happens exclusively on a completed address lookup, not on every keystroke or country-select change. When switching countries in the location panel, only the stores list and store-status paragraph are patched in-place (`patchLocationCountryDOM`) — the locale itself does not change until a lookup resolves to a known store.
-
----
-
----
-
-## 11. Menu Search
-
-### 11.1 Search input location
-A text search field is rendered in a dedicated row (`menu__search-row`) directly below the category filter toolbar on the shop / home screen. It is always visible regardless of the active category.
-
-### 11.2 Search scope
-The search matches against `product.name` and `product.description` — case-insensitive and accent-sensitive. Both fields are lowercased before comparison.
-
-```ts
-// src/ui/menu.ts
-const filtered = menuSearchQuery
-  ? categoryFiltered.filter(
-      (p) =>
-        p.name.toLowerCase().includes(menuSearchQuery) ||
-        p.description.toLowerCase().includes(menuSearchQuery)
-    )
-  : categoryFiltered;
-```
-
-### 11.3 Search and category filter compose
-Both filters are applied together: the category filter runs first, then the search query narrows the result. Clearing either restores the products that satisfy the remaining filter.
-
-```ts
-// src/ui/menu.ts
-const categoryFiltered = activeFilter === "all"
-  ? items
-  : items.filter((p) => p.category === activeFilter);
-
-const filtered = menuSearchQuery ? categoryFiltered.filter(…) : categoryFiltered;
-```
-
-### 11.4 State persistence across re-renders
-The active query is stored in a module-level variable `menuSearchQuery` inside `src/ui/menu.ts` and exposed via `setMenuSearch` / `getMenuSearch`. It survives cart updates, location saves, and any other event that triggers `render()`.
-
-### 11.5 Real-time filtering
-The input is bound to the `input` event in `main.ts`. Every keystroke calls `setMenuSearch` and immediately triggers `render()` to update the product grid.
-
-```ts
-// src/main.ts — input listener
-if (target?.matches("[data-menu-search]")) {
-  setMenuSearch((target as HTMLInputElement).value);
-  render();
-  return;
-}
-```
-
-### 11.6 Cursor preservation across re-renders
-Because `render()` replaces the full page `innerHTML`, the search input loses focus and its cursor position on every keystroke. To prevent this, `main.ts` snapshots the caret position before each render and refocuses the input (with caret restored) after, using the generic `getInputFocusSnapshot` / `restoreInputFocus` helpers.
-
-```ts
-// src/main.ts — render()
-const searchCaret = getInputFocusSnapshot("[data-menu-search]");
-// … render …
-if (searchCaret >= 0) {
-  restoreInputFocus("[data-menu-search]", searchCaret);
-}
-```
-
-### 11.7 Empty state
-If no products match the combined category + search filters, the same centered placeholder used by the category filter is shown:
-
-```html
-<p class="menu__empty">No items in this category yet.</p>
-```
-
----
-
-## 12. Tip Option
-
-### 12.1 Preset tip amounts
-The checkout page includes a tip selector inside the order summary section. Four buttons are presented:
-
-| Label | Value stored |
-|---|---|
-| No tip | `tipPercent = 0` |
-| 10% | `tipPercent = 10` |
-| 15% | `tipPercent = 15` |
-| 20% | `tipPercent = 20` |
-
-The default is **No tip** (`0`).
-
-### 12.2 State storage
-The selected tip is stored as `tipPercent: TipPercent` (type `0 | 10 | 15 | 20`) on the persistent `checkoutForm` object in `src/checkout/checkoutForm.ts`. It survives navigation between views within the same session.
-
-### 12.3 Tip amount calculation
-The tip is a percentage of the **items subtotal** (before any donation):
-
-```ts
-// src/ui/checkoutView.ts
-const tipAmount = subtotal * f.tipPercent / 100;
-```
-
-### 12.4 Order summary display
-The order summary section shows three rows in the totals area:
-
-1. **Subtotal** — items total (always shown; `data-testid="checkout-subtotal"`)
-2. **Tip (X%)** — tip amount; only shown when `tipPercent > 0` (`data-testid="checkout-tip-amount"`)
-3. **Total** — grand total = subtotal + tip + donation (`data-testid="checkout-total"`)
-
-### 12.5 Interaction pattern
-Tip buttons carry `data-action="set-tip"` and `data-tip-percent`. Clicking them is handled directly in the root click listener in `main.ts` (before `handleCartAction`) and triggers a full checkout re-render:
-
-```ts
-// src/main.ts — click listener
-if (action === "set-tip") {
-  const pct = parseInt(el.dataset.tipPercent ?? "0", 10);
-  if ([0, 10, 15, 20].includes(pct)) {
-    checkoutForm.tipPercent = pct as TipPercent;
-    if (getView() === "checkout") render();
-  }
-  return;
-}
-```
-
----
-
-## 13. Donation
-
-### 13.1 Association
-The beneficiary is always **Associação de doações Teste**. The name is defined as a single constant and used in both the donation selector UI and the order summary line:
-
-```ts
-// src/checkout/checkoutForm.ts
-export const DONATION_ASSOCIATION = "Associação de doações Teste";
-```
-
-### 13.2 Donation modes
-Two independent modes are offered — only one can be active at a time:
-
-| Mode | Description |
-|---|---|
-| **Fixed amount** | A fixed monetary value (in the active display currency) |
-| **Percentage** | A percentage of the items subtotal |
-
-Default state is **No donation** (`donationType = "none"`).
-
-### 13.3 Preset options
-Each mode has three preset quick-select buttons:
+### 8.4 Donation presets
 
 | Fixed presets | Percent presets |
 |---|---|
-| $1.00 / R$1,00 | 1% |
-| $2.00 / R$2,00 | 2% |
-| $5.00 / R$5,00 | 5% |
+| 1, 2, 5 currency units | 1%, 2%, 5% |
 
-Preset values are defined as constants in `src/checkout/checkoutForm.ts`:
+Fixed preset values are stored internally as USD and displayed through
+`formatPrice`.
 
-```ts
-export const DONATION_FIXED_OPTIONS  = [1, 2, 5] as const;   // USD
-export const DONATION_PERCENT_OPTIONS = [1, 2, 5] as const;  // percent
-```
+### 8.5 Custom donation
 
-Preset fixed amounts are stored internally in USD and displayed through `formatPrice`, so they adapt automatically to the active locale.
+Custom fixed donation values are typed in the active display currency and
+converted back to USD with `fromDisplayPrice`.
 
-### 13.4 Custom value inputs
-Each mode also exposes a `<input type="number">` for a user-defined amount:
+Custom percent donation values are stored as percentages and are not currency
+converted.
 
-- **Fixed custom** — the user types the amount in the **active display currency** (USD or BRL). The value is converted to USD before being stored internally using `fromDisplayPrice()`.
-- **Percent custom** — the user types a percentage. Percentages are locale-independent and stored as-is. A `%` suffix is rendered inside the input wrapper.
+If the custom value is empty, invalid, or not greater than zero, donation resets
+to `none`.
 
-```ts
-// src/i18n/locale.ts
-export function fromDisplayPrice(localAmount: number): number {
-  return activeLocale === "pt-BR" ? localAmount / USD_TO_BRL : localAmount;
-}
-```
+### 8.6 Grand total
 
-```ts
-// src/main.ts — donation custom input handler
-checkoutForm.donationAmount = valid ? fromDisplayPrice(parsed) : 0;  // fixed
-checkoutForm.donationAmount = valid ? parsed : 0;                    // percent
-```
+The checkout grand total is:
 
-### 13.5 Mutual exclusivity
-Selecting a preset in one mode (or typing in its custom field) deactivates the other mode entirely. Clicking **No donation** resets all state:
-
-```ts
-checkoutForm.donationType      = "none";
-checkoutForm.donationAmount    = 0;
-checkoutForm.donationCustomFixed   = "";
-checkoutForm.donationCustomPercent = "";
-```
-
-### 13.6 Active-state logic for preset buttons
-A preset button is highlighted only when:
-- `donationType` matches the button's group (`"fixed"` or `"percent"`), **and**
-- `donationAmount` matches the preset value, **and**
-- the custom input for that group is **empty** (`donationCustomFixed === ""` or `donationCustomPercent === ""`).
-
-This ensures that typing a custom value of `2` does not incorrectly highlight the `$2.00` preset.
-
-### 13.7 Donation amount calculation
-
-```ts
-// src/ui/checkoutView.ts
-const donationAmount =
-  f.donationType === "fixed"   ? f.donationAmount :
-  f.donationType === "percent" ? subtotal * f.donationAmount / 100 :
-  0;
-```
-
-### 13.8 Effect on grand total
-The grand total shown in the checkout order summary is:
-
-```
-Grand Total = Subtotal + Tip Amount + Donation Amount
-```
-
-Both tip and donation are included in `data-testid="checkout-total"`.
-
-### 13.9 No re-render while typing in custom fields
-Typing in a donation custom field calls `patchDonationSummary(cart)` instead of `render()`. This function surgically updates only the affected DOM nodes — the donation row, grand total text, custom-input active classes, and preset button active classes — without replacing the `<input>` element. This preserves the browser-managed cursor position across every keystroke.
-
-```ts
-// src/ui/checkoutView.ts (exported)
-export function patchDonationSummary(cart: CartStore): void {
-  // 1. Insert / update / remove the donation amount row in the totals.
-  // 2. Update the grand total <strong> text.
-  // 3. Toggle checkout-donation__custom-input--active on each custom input.
-  // 4. Toggle checkout-donation__btn--active on each preset button.
-}
-```
-
-### 13.10 State storage
-All donation state is held on the persistent `checkoutForm` object and survives navigation within the session:
-
-```ts
-// src/checkout/checkoutForm.ts
-donationType:          "none" as DonationType,  // "none" | "fixed" | "percent"
-donationAmount:        0,      // USD internally
-donationCustomFixed:   "",     // raw text in the fixed custom input
-donationCustomPercent: "",     // raw text in the percent custom input
+```text
+subtotal + tip amount + donation amount
 ```
 
 ---
 
-*Last updated: April 2026 — Burguer-Tenders training project.*
+## 9. Order Placement
+
+### 9.1 Delivery data is read-only in checkout
+
+Checkout displays the saved delivery address in disabled fields. The user cannot
+edit delivery from checkout; they must return to the menu and use the location
+drawer.
+
+### 9.2 Successful submission
+
+When validation passes:
+
+1. `confirmedUserName` is set from the trimmed full name.
+2. The cart is cleared.
+3. The view changes to `confirmation`.
+
+### 9.3 Confirmation page
+
+The confirmation page shows:
+
+- Personalized localized greeting.
+- Success icon.
+- Fixed ETA of `30 min`.
+- Saved delivery address.
+- Fulfilling store name when available.
+- Back-to-menu button.
+
+The ETA is a demo constant and is not calculated dynamically.
+
+---
+
+## 10. Navigation and UI State
+
+### 10.1 Views
+
+The app has three views:
+
+| View | Meaning |
+|---|---|
+| `shop` | Menu/home screen |
+| `checkout` | Checkout form |
+| `confirmation` | Order confirmation |
+
+View state lives in `useUiStore.view`.
+
+### 10.2 Header home action
+
+Clicking the header brand:
+
+- Clears checkout validation errors.
+- Closes the cart drawer.
+- Closes the location drawer.
+- Navigates to `shop`.
+
+### 10.3 Back to menu from checkout
+
+The checkout back button clears checkout validation errors, closes drawers, and
+returns to `shop`.
+
+### 10.4 Confirmation back action
+
+The confirmation page back button returns to `shop`.
+
+### 10.5 Escape key
+
+Escape closes only one surface per key press:
+
+1. Location drawer first, if open.
+2. Otherwise cart drawer, if open.
+
+Closing the location drawer also clears any pending add product id.
+
+### 10.6 Drawer exclusivity
+
+Opening the location drawer closes the cart drawer. Opening the cart drawer
+closes the location drawer.
+
+### 10.7 Toast
+
+After a product is added from the customizer, a localized toast appears with the
+product name. Repeated adds increment `toastVersion`, allowing the toast timer
+to restart even if the item name is the same.
+
+---
+
+## 11. Address Geocoding
+
+### 11.1 API endpoints
+
+The React app calls:
+
+- `GET /api/geocode?postalCode=...&countryCode=...`
+- `GET /api/delivery`
+- `POST /api/delivery`
+
+All calls include credentials so the session cookie is preserved.
+
+### 11.2 Providers
+
+| Country | Primary | Fallback |
+|---|---|---|
+| BR | ViaCEP | Nominatim |
+| Others | Nominatim | None |
+
+ViaCEP is preferred for Brazil. Nominatim remains keyless and uses a configured
+User-Agent.
+
+### 11.3 Postal code normalization
+
+Server-side postal rules remain:
+
+- Brazil uses 8 digits for lookup and may display as `XXXXX-XXX`.
+- US ZIP+4 is reduced to the first 5 digits.
+
+### 11.4 Lookup result
+
+A successful lookup applies geocoded fields to the location draft and recomputes
+`storeId`. If the recomputed store id exists, the locale is set from the
+selected country.
+
+If lookup fails, `lookupError` is shown in the drawer and no delivery is saved.
+
+---
+
+## 12. Dynamic Translation and Currency
+
+### 12.1 Supported locales
+
+| Country | Locale | Currency |
+|---|---|---|
+| US | `en-US` | USD |
+| BR | `pt-BR` | BRL |
+
+The default locale is `en-US`.
+
+### 12.2 Locale switching
+
+The locale switches when a lookup or saved delivery resolves to a country:
+
+- `BR` sets `pt-BR`.
+- Any other supported country sets `en-US`.
+
+Looking up a city that has no matching store does not save a delivery and should
+not be treated as a valid delivery location.
+
+### 12.3 Translation scope
+
+User-visible UI strings are routed through `t(key, vars)` for:
+
+- Category filter.
+- Menu and search.
+- Product customizer.
+- Cart drawer.
+- Checkout.
+- Tip and donation sections.
+- Confirmation page.
+- Location drawer.
+- Header ARIA labels.
+- Toast text.
+
+### 12.4 Currency formatting
+
+Amounts are stored in USD. `formatPrice(usd)` displays:
+
+- USD for `en-US`.
+- BRL for `pt-BR`, using a fixed training conversion of `USD * 5.7`.
+
+This is a demo conversion, not a live exchange rate.
+
+### 12.5 Display-to-USD conversion
+
+`fromDisplayPrice(localAmount)` converts user-entered local currency back to USD
+for fixed donation input:
+
+```text
+pt-BR: localAmount / 5.7
+en-US: localAmount
+```
+
+---
+
+## 13. Automated Test Structure
+
+### 13.1 Location
+
+Playwright specs now live under `playwright/tests`. Shared fixtures and helpers
+live under `playwright/helpers`, and test data lives under `playwright/data`.
+
+### 13.2 Page Object Model
+
+The branch added POM classes under `playwright/pages`, including:
+
+- `app.ts`
+- `header.ts`
+- `menuPage.ts`
+- `cartDrawer.ts`
+- `checkoutPage.ts`
+- `locationDrawer.ts`
+
+New tests should prefer these page objects for reusable flows.
+
+### 13.3 Commands
+
+The package scripts are:
+
+```json
+{
+  "dev": "vite",
+  "server": "node server/index.mjs",
+  "dev:all": "concurrently -k \"npm run server\" \"npm run dev\"",
+  "build": "tsc && vite build",
+  "test": "playwright test",
+  "test:ui": "playwright test --ui",
+  "test:headed": "playwright test --headed",
+  "test:report": "playwright show-report"
+}
+```
+
+---
+
+*Last updated: May 2026 - BeeTee's React migration branch.*
