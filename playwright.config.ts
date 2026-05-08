@@ -5,7 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
  * The Vite dev server proxies /api → http://localhost:3001.
  */
 export default defineConfig({
-  testDir: "./tests",
+  testDir: "./playwright/tests",
   testMatch: "**/*.spec.ts",
 
   /* Run tests in files in parallel */
@@ -47,5 +47,5 @@ export default defineConfig({
   ],
 
   /* Global setup / teardown hooks (optional — add when needed) */
-  // globalSetup: "./tests/global-setup.ts",
+  // globalSetup: "./playwright/helpers/global-setup.ts",
 });

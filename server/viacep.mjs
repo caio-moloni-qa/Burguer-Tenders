@@ -1,10 +1,12 @@
+import { digitsOnly } from "./text.mjs";
+
 /**
  * ViaCEP — official Brazilian postal code lookup (free, no API key).
  * @see https://viacep.com.br/
  */
 
 export async function lookupViaCep(eightDigits) {
-  const digits = String(eightDigits || "").replace(/\D/g, "");
+  const digits = digitsOnly(eightDigits);
   if (digits.length !== 8) {
     return null;
   }
@@ -13,7 +15,7 @@ export async function lookupViaCep(eightDigits) {
   const r = await fetch(url, {
     headers: {
       Accept: "application/json",
-      "User-Agent": "BurguerTenders-Training/1.0",
+      "User-Agent": "BeeTees-Training/1.0",
     },
   });
 

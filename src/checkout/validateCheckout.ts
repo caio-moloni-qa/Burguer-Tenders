@@ -1,7 +1,6 @@
-import { checkoutForm } from "./checkoutForm";
-import { locationDelivery } from "../location/location";
-
-type CheckoutFormState = typeof checkoutForm;
+import type { CheckoutForm } from "../stores/checkoutStore";
+import { t } from "../i18n/locale";
+import { digitsOnly, isLetter } from "../utils/text";
 
 export type CheckoutValidationResult = {
   valid: boolean;
@@ -11,7 +10,7 @@ export type CheckoutValidationResult = {
 
 function isValidEmail(s: string): boolean {
   const at = s.trim().indexOf("@");
-  if (!at) {
+  if (at <= 0) {
     return false;
   }
   const domain = s.trim().slice(at + 1);
@@ -20,20 +19,27 @@ function isValidEmail(s: string): boolean {
 
 /** Only letters (including accented), spaces, hyphens, and apostrophes. */
 function isValidCardName(s: string): boolean {
-  return /^[A-Za-zÀ-ÖØ-öø-ÿ\s'\-]+$/.test(s.trim());
+  const trimmed = s.trim();
+  if (!trimmed) {
+    return false;
+  }
+  for (const char of trimmed) {
+    if (!isLetter(char) && char !== " " && char !== "-" && char !== "'") {
+      return false;
+    }
+  }
+  return true;
 }
 
 /** 13–19 digits (spaces stripped). */
 function isValidCardNumber(s: string): boolean {
-  const digits = s.replace(/\s/g, "");
-  return /^\d{13,19}$/.test(digits);
+  const digits = digitsOnly(s);
+  return digits.length >= 13 && digits.length <= 19;
 }
 
-/**
- * Expects "MM / YY". Month 01-12, not expired relative to the current month.
- */
+/** Expects "MM / YY". Month 01-12, not expired relative to the current month. */
 function isValidExpiry(s: string): boolean {
-  const digits = s.replace(/\D/g, "");
+  const digits = digitsOnly(s);
   if (digits.length !== 4) {
     return false;
   }
@@ -44,59 +50,64 @@ function isValidExpiry(s: string): boolean {
   }
   // Card is valid through the last day of the expiry month.
   const now = new Date();
-  const expiry = new Date(year, month); // 1st of the month AFTER expiry
+  const expiry = new Date(year, month);
   return expiry > now;
 }
 
-/** 3 or 4 digits, nothing else. */
 function isValidCvc(s: string): boolean {
-  return /^\d{3,4}$/.test(s.trim());
+  const digits = digitsOnly(s);
+  return digits.length >= 3 && digits.length <= 4 && digits.length === s.trim().length;
 }
 
 /**
  * Validates mandatory checkout fields. Card fields required only when paying by card.
+ * `fallbackZip` lets the caller pass the saved-delivery ZIP so the checkout form
+ * doesn't fail validation when the zip input is empty but a delivery is set.
  */
-export function validateCheckout(f: CheckoutFormState): CheckoutValidationResult {
+export function validateCheckout(
+  f: CheckoutForm,
+  fallbackZip = ""
+): CheckoutValidationResult {
   const errors: Record<string, string> = {};
 
   if (!f.fullName.trim()) {
-    errors.fullName = "Name is required.";
+    errors.fullName = t("checkoutErrorNameRequired");
   }
   if (!f.email.trim()) {
-    errors.email = "Email is required.";
+    errors.email = t("checkoutErrorEmailRequired");
   } else if (!isValidEmail(f.email)) {
-    errors.email = "Enter a valid email address.";
+    errors.email = t("checkoutErrorEmailInvalid");
   }
 
-  const zip = f.zipCode.trim() || locationDelivery.zipCode.trim();
+  const zip = f.zipCode.trim() || fallbackZip.trim();
   if (!zip) {
-    errors.zipCode = "ZIP / postal code is required.";
+    errors.zipCode = t("checkoutErrorZipRequired");
   }
 
   if (f.paymentMethod === "card") {
     if (!f.cardNameOnCard.trim()) {
-      errors.cardNameOnCard = "Name on card is required.";
+      errors.cardNameOnCard = t("checkoutErrorCardNameRequired");
     } else if (!isValidCardName(f.cardNameOnCard)) {
-      errors.cardNameOnCard = "Name on card must contain only letters and spaces.";
+      errors.cardNameOnCard = t("checkoutErrorCardNameInvalid");
     }
 
-    const rawNumber = f.cardNumber.replace(/\s/g, "");
+    const rawNumber = digitsOnly(f.cardNumber);
     if (!rawNumber) {
-      errors.cardNumber = "Card number is required.";
+      errors.cardNumber = t("checkoutErrorCardNumberRequired");
     } else if (!isValidCardNumber(f.cardNumber)) {
-      errors.cardNumber = "Enter a valid card number (13–19 digits).";
+      errors.cardNumber = t("checkoutErrorCardNumberInvalid");
     }
 
     if (!f.cardExpiry.trim()) {
-      errors.cardExpiry = "Expiry date is required.";
+      errors.cardExpiry = t("checkoutErrorExpiryRequired");
     } else if (!isValidExpiry(f.cardExpiry)) {
-      errors.cardExpiry = "Enter a valid expiry date (MM / YY) that hasn't passed.";
+      errors.cardExpiry = t("checkoutErrorExpiryInvalid");
     }
 
     if (!f.cardCvc.trim()) {
-      errors.cardCvc = "Security code is required.";
+      errors.cardCvc = t("checkoutErrorCvcRequired");
     } else if (!isValidCvc(f.cardCvc)) {
-      errors.cardCvc = "Security code must be 3 or 4 digits.";
+      errors.cardCvc = t("checkoutErrorCvcInvalid");
     }
   }
 

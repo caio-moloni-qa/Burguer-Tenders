@@ -1,553 +1,348 @@
-# Burguer-Tenders
+# BeeTee's
 
-A fake fast-food e-commerce SPA built with **Vite + TypeScript** (frontend) and **Express** (backend), used as a training ground for Playwright automated testing.
+Training e-commerce SPA for Playwright automation. The app simulates a fast-food ordering flow with localized content, delivery lookup, guest checkout, DB-backed authentication, profile management, previous orders, and order confirmation.
 
----
+## Stack
 
-## Table of Contents
-
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Application Features](#application-features)
-  - [Product Catalog](#product-catalog)
-  - [Category Filter](#category-filter)
-  - [Delivery Location Panel](#delivery-location-panel)
-  - [Cart](#cart)
-  - [Checkout](#checkout)
-  - [Order Confirmation](#order-confirmation)
-  - [UI / UX Details](#ui--ux-details)
-- [Backend API](#backend-api)
-- [Automated Tests](#automated-tests)
-  - [Setup](#setup)
-  - [Running Tests](#running-tests)
-  - [Test Suites](#test-suites)
-  - [Shared Helpers](#shared-helpers)
-  - [Reference Data](#reference-data)
-  - [Playwright MCP (AI Agents)](#playwright-mcp-ai-agents)
-    - [Install Cursor](#install-cursor)
-    - [Install VS Code (GitHub Copilot)](#install-vs-code-github-copilot)
-    - [Install Codex CLI](#install-codex-cli)
-    - [Enable the MCP servers (Cursor)](#enable-the-mcp-servers-cursor)
-    - [Calling MCPs from chat (`@` mentions)](#calling-mcps-from-chat--mentions)
-    - [Calling agents from chat (`@` mentions)](#calling-agents-from-chat--mentions)
-
----
-
-## Tech Stack
-
-| Layer | Technology |
+| Layer | Tech |
 |---|---|
-| Frontend | Vite 6, TypeScript, vanilla DOM |
+| Frontend | React 19, Vite 6, TypeScript, MUI |
+| State | Zustand |
 | Backend | Node.js, Express 4 |
-| Geocoding (BR) | ViaCEP API |
-| Geocoding (US/other) | Nominatim (OpenStreetMap) — no API key |
-| Test runner | Playwright 1.59 (`@playwright/test`) |
-| Session storage | In-memory `Map` (server-side, cookie-tracked) |
+| Database | PostgreSQL 16 |
+| DB client | `pg` |
+| Tests | Playwright + Page Object Model |
+| Geocoding | ViaCEP for BR, Nominatim for US/other |
 
----
+Vite is still required: dev server, JSX/TS bundling, production build, and `/api` proxy.
 
-## Project Structure
-
-```
-burguer-tenders/
-├── public/
-│   ├── favicon.svg              # Burger SVG favicon
-│   └── images/
-│       ├── logo.png
-│       ├── clock-icon-white.svg
-│       └── products/            # 16 product images (.png)
-├── server/
-│   ├── index.mjs                # Express API server (port 3001)
-│   ├── geocode.mjs              # Nominatim helpers
-│   └── viacep.mjs               # ViaCEP helpers
-├── src/
-│   ├── api/                     # Client-side API callers
-│   ├── cart/                    # Cart store + pub-sub
-│   ├── checkout/                # Form state + validation
-│   ├── data/                    # Products & stores static data
-│   ├── location/                # Location state management
-│   ├── styles/app.css           # Global stylesheet
-│   ├── types/                   # TypeScript types
-│   ├── ui/                      # All render functions
-│   └── main.ts                  # App entry point — event handlers + render loop
-├── tests/
-│   ├── helpers.ts               # Shared Playwright actions
-│   ├── 01-product-catalog.spec.ts
-│   ├── 02-category-filter.spec.ts
-│   ├── 03-location-panel.spec.ts
-│   ├── 04-geocoding-store.spec.ts
-│   ├── 05-cart.spec.ts
-│   ├── 06-checkout-validation.spec.ts
-│   ├── 07-order-confirmation.spec.ts
-│   ├── 08-navigation.spec.ts
-│   └── 09-ui-feedback.spec.ts
-├── specs/
-│   └── README.md                # Playwright Agents test-plan directory
-├── .cursor/mcp.json             # Cursor MCP server config
-├── playwright.config.ts
-└── package.json
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm 9+
-
-### Install
+## Quick Start
 
 ```bash
 npm install
 npx playwright install chromium
-```
-
-### Run the app
-
-```bash
+docker compose up -d db
+npm run db:setup
 npm run dev:all
 ```
 
-This starts both servers concurrently:
-
-| Server | URL | Purpose |
-|---|---|---|
-| Vite dev server | `http://localhost:5173` | Frontend SPA |
-| Express API | `http://localhost:3001` | Delivery session + geocoding proxy |
-
----
-
-## Application Features
-
-### Product Catalog
-
-- **16 products** across 5 categories
-- Each card shows: name, description, USD price, product image
-- Spicy products display a **Spicy** badge
-
-| Category | Count | Example products |
-|---|---|---|
-| Burger | 4 | Cheeseburguer, BT Special (spicy), Avocado Burguer, Cheeseburguer Bacon |
-| Tenders | 2 | Pack of Tenders, Spicy Pack of Tenders |
-| Combos | 4 | Tenders + Cheeseburguer, Spicy Tenders + Milkshake, Tenders + Drink, Bacon + Fries |
-| Drinks | 2 | Doctor BT, Guaraná |
-| Sides | 4 | Plain Fries, Lemon Pepper Fries, Chocolate Milkshake, Strawberry Milkshake |
-
----
-
-### Category Filter
-
-A `<select>` dropdown above the product grid filters the catalog by category. Options: **All**, **Burgers**, **Tenders**, **Combos**, **Drinks**, **Sides**. Selecting a category with no products shows an empty-state message.
-
----
-
-### Delivery Location Panel
-
-A slide-in drawer (right → left animation) where the user sets their delivery address.
-
-**Flow:**
-
-1. Click the location pin icon in the header
-2. Select country (Brazil or United States)
-3. Enter ZIP / postal code
-4. Click **Look up address**
-   - Button turns into a spinning loader while the API call runs
-   - The **Save location** button is disabled with its own spinner during lookup
-   - 500 ms after lookup completes, Save re-enables
-5. Address fields auto-fill (street, neighborhood, city, state, country)
-6. The store list updates to show stores for the selected country
-7. A status message shows delivery availability
-8. Click **Save location** to persist — panel closes
-
-**Store availability:**
-
-| ZIP | City | Store |
-|---|---|---|
-| `86015280` | Londrina, PR, Brazil | Burguer-Tenders Higienopolis |
-| `05413010` | São Paulo, SP, Brazil | Burguer-Tenders Pinheiros |
-| `10001` | New York, NY, USA | Burguer-Tenders Midtown |
-| Any other | — | No delivery available |
-
-After saving, a **store banner** appears above the product grid: `Ordering from <store name>`.
-
-**Panel behaviour rules:**
-- Opening the location panel closes the cart drawer (and vice versa)
-- Pressing `Escape` closes the panel
-- Clicking the backdrop closes the panel
-- Typing in any input does **not** re-render or collapse the panel
-- Changing the country `<select>` patches only the stores block in-place — no full re-render
-
----
-
-### Cart
-
-- Products can only be added after a delivery location is saved
-- If the user clicks **Add to cart** without a location, the location panel opens automatically
-- A **green toast notification** appears for 2.5 seconds confirming the addition
-- The cart badge in the header always shows the current item count (shows `0` when empty)
-- The cart drawer supports quantity increment, decrement, and line removal
-- All cart mutations update the DOM in-place (no full re-render / no panel collapse)
-
----
-
-### Checkout
-
-Reached via **Go to checkout** inside the cart drawer. A 0.75-second full-screen spinner overlay plays during navigation.
-
-**Form sections:**
-
-1. **Your details** — Name, Email
-2. **Delivery address** — Read-only inputs pre-filled from the saved location (ZIP, Street, Neighborhood, City/State, Country, Complement) + store name
-3. **Payment** — Credit/debit card or Pay in restaurant
-   - Card fields: Name on card, Card number (formatted `XXXX XXXX XXXX XXXX`), Expiry (`MM / YY`), CVC (masked)
-   - Real-time formatting: digits-only enforcement on number/expiry/CVC; letters-only on name
-
-**Validation rules:**
-
-| Field | Rule |
+| Service | URL |
 |---|---|
-| Name | Required |
-| Email | Must contain `@` and a domain with `.` after it |
-| Card name | Letters, spaces, hyphens, apostrophes only — no digits |
-| Card number | 13–19 digits |
-| Expiry | Valid `MM/YY`, month 01–12, not in the past |
-| CVC | 3 or 4 digits |
+| App | `http://localhost:5173` |
+| API | `http://localhost:3001` |
+| PostgreSQL | `localhost:5432` |
 
----
+## Environment
 
-### Order Confirmation
+Default local DB:
 
-After a successful order submission, the app navigates to a confirmation page showing:
+```txt
+DATABASE_URL=postgres://beetee:beetee_dev_password@localhost:5432/beetee_dev
+```
 
-- **Thank you, `<name>`!**
-- Your order is placed!
-- ETA **30 min** with a clock icon
-- Full delivery address (read-only)
-- Back to menu button
+Optional env vars:
 
----
+| Var | Default | Purpose |
+|---|---|---|
+| `PORT` | `3001` | Express API port |
+| `DATABASE_URL` | local Docker DB | PostgreSQL connection |
+| `NOMINATIM_USER_AGENT` | training UA | OpenStreetMap request identity |
 
-### UI / UX Details
+## Scripts
 
-| Feature | Detail |
+| Command | Purpose |
 |---|---|
-| Favicon | Burger SVG icon in browser tab |
-| Header logo | Clickable — returns to home from any view |
-| Drawer animations | Both location and cart panels slide in from the right |
-| Checkout spinner | Full-screen overlay with red ring spinner (0.75 s) |
-| Spicy badge | Shown only on spicy products |
-| Cart toast | Green bottom panel, auto-hides in 2.5 s |
-| Empty category | Shows "No items in this category yet." message |
-| Reduced motion | Animations suppressed via `prefers-reduced-motion` |
+| `npm run dev` | Vite frontend only |
+| `npm run server` | Express API only |
+| `npm run dev:all` | Frontend + API |
+| `npm run db:migrate` | Apply `database/schema.sql` |
+| `npm run db:seed` | Seed translations, products, promos, demo user, demo order |
+| `npm run db:setup` | Migrate + seed |
+| `npm run build` | TypeScript + Vite production build |
+| `npm test` | Playwright headless run |
+| `npm run test:ui` | Playwright UI mode |
+| `npm run test:headed` | Headed Chromium |
+| `npm run test:report` | Open HTML report |
 
----
+## Database
 
-## Backend API
+PostgreSQL is authoritative for catalog, UI content, accounts, saved account locations, and authenticated order history.
+
+Share DB structure through source-controlled files:
+
+```txt
+docker-compose.yml
+database/schema.sql
+database/migrate.mjs
+database/seed.mjs
+database/seeds/products.json
+database/seeds/promos.json
+database/seeds/translations.json
+package.json
+```
+
+New machine setup:
+
+```bash
+npm install
+docker compose up -d db
+npm run db:setup
+npm run dev:all
+```
+
+Tables:
+
+| Table | Purpose |
+|---|---|
+| `translations` | UI copy by locale/key |
+| `products` | Product metadata: category, image, price, calories, spicy flag |
+| `product_translations` | Product name, short name, description by locale |
+| `promos` | Promo carousel image metadata |
+| `users` | Login identity and profile basics |
+| `user_locations` | Saved account delivery location |
+| `orders` | Authenticated checkout history |
+
+Current seed source:
+
+- `database/seeds/translations.json`
+- `database/seeds/products.json`
+- `database/seeds/promos.json`
+
+Runtime content loads from PostgreSQL through `/api/content`. Product and translation changes should be made in seed data or the database, not in `src/`.
+
+Auth seed data is created by `database/seed.mjs` directly from the same schema. User-created accounts are stored in the local database and are not portable unless exported with a database dump.
+
+Seeded demo login:
+
+```txt
+Email: alex@beetees.test
+Password: beetee123
+```
+
+## Data Ownership
+
+Current split:
+
+| Area | Source of truth | Runtime location | Notes |
+|---|---|---|---|
+| Products | PostgreSQL, seeded from `database/seeds/products.json` | `src/data/products.ts` | Client cache only |
+| Promos | PostgreSQL, seeded from `database/seeds/promos.json` | `src/data/promos.ts` | Client cache only |
+| UI translations | PostgreSQL, seeded from `database/seeds/translations.json` | `src/i18n/locale.ts` | `locale.ts` stores loaded dictionaries |
+| User profiles | PostgreSQL `users` + `user_locations` | `src/stores/authStore.ts` | Authenticated session state |
+| Previous orders | PostgreSQL `orders` | `src/stores/authStore.ts` | Loaded after login and checkout |
+| Store service areas | `src/data/stores.ts` | `src/data/stores.ts` | Still frontend business rules |
+| Postal/text helpers | `src/utils/text.ts` | `src/utils/text.ts` | Shared client utility logic |
+
+`src/data/products.ts` and `src/data/promos.ts` are not static content sources anymore. They start empty, then `/api/content` fills them during app bootstrap.
+
+Rule of thumb:
+
+- Change product/menu/promo/translation content in DB seed files or directly in DB.
+- Change delivery/store availability rules in `src/data/stores.ts`.
+- Do not add product or translation literals back into `src/data/products.ts` or `src/i18n/locale.ts`.
+
+## Content Flow
+
+```txt
+React startup
+  -> useContentBootstrap()
+  -> GET /api/content
+  -> Express contentRepository
+  -> PostgreSQL
+  -> setProducts() + setPromos() + setTranslationDictionaries()
+  -> localeVersion re-render
+```
+
+Locale behavior:
+
+- Default: `en-US`
+- Signup country selection updates the active locale immediately
+- BR delivery/store lookup: switches to `pt-BR`
+- US delivery/store lookup: switches to `en-US`
+- Prices display USD or BRL via active locale
+
+## Authentication Flow
+
+Guest workflow remains unchanged: users can set delivery, customize items, use the cart, and check out without an account.
+
+Authenticated workflow:
+
+- Header profile icon opens login for guests and profile for authenticated users.
+- Signup requires account details plus a deliverable location.
+- Signup country controls initial language: BR uses Portuguese, US uses English.
+- Login and signup show a smooth success overlay before navigation.
+- Profile includes Account Details, Previous Orders, and Logout.
+- Authenticated checkout saves the order to PostgreSQL.
+- Users with previous orders see a localized reorder prompt on the home screen.
+
+## API
 
 Base URL: `http://localhost:3001`
 
-| Method | Endpoint | Description |
+| Method | Endpoint | Purpose |
 |---|---|---|
-| `GET` | `/api/health` | Liveness check |
-| `GET` | `/api/geocode?postalCode=&countryCode=` | Resolves a ZIP to a structured address |
-| `GET` | `/api/delivery` | Returns the saved delivery for the current session |
-| `POST` | `/api/delivery` | Saves delivery details for the current session |
+| `GET` | `/api/health` | API liveness |
+| `GET` | `/api/content` | DB-backed products, translations, promos |
+| `GET` | `/api/geocode?postalCode=&countryCode=` | Postal-code lookup |
+| `GET` | `/api/delivery` | Read delivery session |
+| `POST` | `/api/delivery` | Save delivery session |
+| `GET` | `/api/auth/me` | Read authenticated user |
+| `POST` | `/api/auth/login` | Start authenticated session |
+| `POST` | `/api/auth/signup` | Create account with deliverable location and start authenticated session |
+| `POST` | `/api/auth/logout` | Return to guest flow |
+| `PUT` | `/api/auth/profile` | Update account details and location |
+| `GET` | `/api/orders` | Read previous orders |
+| `POST` | `/api/orders` | Save authenticated checkout order |
 
-Sessions are tracked via an `HttpOnly` cookie (`bt_sid`). The session store is in-memory — data resets on server restart.
+Sessions use `bt_sid` HttpOnly cookie + in-memory server `Map`.
 
-**Geocoding providers:**
-- Brazil → **ViaCEP** (primary, full CEP coverage)
-- US / other → **Nominatim / OpenStreetMap** (no API key required)
+## App Capabilities
 
----
+- 16-product catalog across burgers, tenders, combos, drinks, sides
+- Localized product names/descriptions and UI copy
+- Promo carousel
+- Menu category filter and search
+- Product spicy badges and calories meter
+- Guest checkout flow
+- DB-backed login, mandatory-location signup, profile, logout, previous orders, localized reorder prompt, and success animations
+- Delivery drawer with store availability
+- Cart drawer with quantity controls and toast feedback
+- Item customizer with add-ons
+- Checkout with card validation, tip, and donation controls
+- Confirmation page with ETA and delivery summary
 
-## Automated Tests
+## Architecture
 
-### Setup
+```txt
+src/App.tsx
+|-- MenuPage
+|   |-- PromoBanner
+|   |-- CategoryFilter
+|   |-- MenuSearch
+|   `-- ProductCard
+|-- CartDrawer
+|-- LocationDrawer
+|-- ItemCustomizerDialog
+|-- CheckoutPage
+|-- LoginPage
+|-- SignupPage
+|-- ProfilePage
+`-- ConfirmationPage
+```
 
-Tests require the app to be running. In one terminal:
+State stores:
+
+| Store | Role |
+|---|---|
+| `uiStore` | view, filter, search, toast, spinner, localeVersion |
+| `cartStore` | cart lines, quantities, drawer state |
+| `authStore` | authenticated user, previous orders, reorder prompt state |
+| `locationStore` | delivery fields, lookup state, panel state |
+| `checkoutStore` | form fields, errors, confirmation user |
+
+## Testing
+
+Tests live in `playwright/tests/`. Page Objects live in `playwright/pages/`.
+
+Student challenge briefs live in `STUDENT_CHALLENGES.md`.
+
+Run app first:
 
 ```bash
 npm run dev:all
 ```
 
-Then in another terminal run the tests.
+Run tests:
 
-### Running Tests
+```bash
+npm test
+```
 
-| Command | Description |
+Specs:
+
+| File | Covers |
 |---|---|
-| `npm test` | Headless run, all suites, list reporter |
-| `npm run test:ui` | Playwright interactive UI mode |
-| `npm run test:headed` | Visible Chromium window |
-| `npm run test:report` | Open the last HTML report |
+| `product-catalog.spec.ts` | Product cards, images, prices, spicy badges |
+| `category-filter.spec.ts` | Category filters and product counts |
+| `location-panel.spec.ts` | Drawer behavior and field persistence |
+| `geocoding-store.spec.ts` | ZIP lookup and store resolution |
+| `cart.spec.ts` | Add-to-cart, quantities, subtotal, location gate |
+| `checkout-validation.spec.ts` | Form validation and checkout rules |
+| `order-confirmation.spec.ts` | Confirmation page content |
+| `navigation.spec.ts` | Routing and navigation |
+| `dynamic-translation.spec.ts` | EN/PT locale behavior |
 
-### Configuration (`playwright.config.ts`)
+Playwright config:
 
 | Setting | Value |
 |---|---|
 | Base URL | `http://localhost:5173` |
-| Browser | Chromium (Desktop Chrome) |
-| Viewport | 1280 × 800 |
-| Workers | 1 (sequential — avoids session collisions) |
-| Retries | 0 locally, 2 on CI |
-| Trace | On first retry |
-| Screenshots | On failure only |
-| Reports | `list` (terminal) + `html` → `playwright-report/` |
+| Browser | Chromium |
+| Viewport | `1280x800` |
+| Workers | `1` |
+| Retries | `0` local, `2` CI |
+| Trace | first retry |
+| Screenshot | failure only |
 
----
-
-### Test Suites
-
-| File | Suite | Tests | What it covers |
-|---|---|---|---|
-| `01-product-catalog.spec.ts` | Product Catalog | 5 | Product count, card content, spicy badges, price format |
-| `02-category-filter.spec.ts` | Category Filter | 8 | Default filter, per-category counts, filter persistence |
-| `03-location-panel.spec.ts` | Location Panel | 10 | Open/close, keyboard/backdrop dismiss, mutual exclusion with cart, focus stability |
-| `04-geocoding-store.spec.ts` | Geocoding & Store | 6 | ZIP → store resolution, store banner, field auto-fill |
-| `05-cart.spec.ts` | Cart | 10 | Badge count, toast, silent re-render, subtotal, location gate |
-| `06-checkout-validation.spec.ts` | Checkout Validation | 10 | All form field validations, read-only delivery fields, store name |
-| `07-order-confirmation.spec.ts` | Order Confirmation | 6 | Thank-you heading, ETA, clock icon, address display |
-| `08-navigation.spec.ts` | Navigation | 5 | Logo, back link, spinner overlay, SPA routing |
-| `09-ui-feedback.spec.ts` | UI Feedback | 7 | Slide animations, store banner, favicon, empty state, focus stability |
-
-**Total: 67 test cases**
-
----
-
-### Shared Helpers (`tests/helpers.ts`)
-
-All spec files import reusable actions from `helpers.ts`:
-
-| Function | Description |
-|---|---|
-| `saveLocation(page, zip, country)` | Opens panel → fills ZIP → clicks lookup → waits for spinner → waits for save button to re-enable → saves |
-| `lookupAddress(page, zip, country)` | Same as above but stops before clicking Save (panel stays open) |
-| `addToCart(page, productId)` | Clicks the Add to cart button for a given product |
-| `goToCheckout(page)` | Clicks Go to checkout → waits for spinner overlay → waits for checkout page |
-| `fillValidCard(page)` | Fills all card fields with valid test data |
-| `fillPersonalDetails(page, name?, email?)` | Fills name and email on the checkout form |
-
----
-
-### Reference Data
-
-**Test ZIPs (`ZIPS` constant):**
+## Test Data
 
 | Key | ZIP | Country | Expected store |
 |---|---|---|---|
-| `londrina` | `86015280` | BR | Burguer-Tenders Higienopolis |
-| `saoPaulo` | `05413010` | BR | Burguer-Tenders Pinheiros |
-| `newYork` | `10001` | US | Burguer-Tenders Midtown |
-| `curitiba` | `80010010` | BR | *(no store — outside service area)* |
+| `londrina` | `86015280` | BR | `BeeTee's Higienopolis` |
+| `saoPaulo` | `05413010` | BR | `BeeTee's Pinheiros` |
+| `newYork` | `10001` | US | `BeeTee's Midtown` |
+| `curitiba` | `80010010` | BR | no store |
 
-**Test card (`CARD` constant):**
+Test card:
 
-| Field | Value |
+```txt
+Name: Test User
+Number: 4111111111111111
+Expiry: 1228
+CVC: 123
+```
+
+## MCP
+
+`mcps/mcp.json` configures the reusable MCP servers:
+
+| Server | Purpose |
 |---|---|
-| Name | `Test User` |
-| Number | `4111111111111111` |
-| Expiry | `1228` (Dec 2028) |
-| CVC | `123` |
+| `playwright` | Browser automation from agent chat |
+| `playwright-test` | Run, debug, generate, heal specs |
 
----
+The `mcps/rules/` folder contains the reusable agent rules that can be copied or linked into any IDE-specific agent setup.
 
-### Playwright MCP (AI Agents)
+## Troubleshooting
 
-The project ships two MCP server configs in `.cursor/mcp.json`:
+### `docker` not found
 
-| Server | Package | Purpose |
-|---|---|---|
-| `playwright` | `@playwright/mcp` | Browser automation — navigate, click, screenshot, assert live UI directly from Cursor Agent chat |
-| `playwright-test` | `playwright run-test-mcp-server` | Run/heal/generate `.spec.ts` tests via AI agents |
+Install Docker Desktop, or run PostgreSQL manually and set `DATABASE_URL`.
 
-Three agent definition files (generated by `npx playwright init-agents`) live in `.github/agents/`:
+### `/api/content` returns 503
 
-| File | Role |
-|---|---|
-| `playwright-test-generator.agent.md` | Generates new test specs from a plain-English description |
-| `playwright-test-healer.agent.md` | Heals failing tests by inspecting errors and fixing selectors |
-| `playwright-test-planner.agent.md` | Plans a full test suite from a feature description |
-
----
-
-#### Install Cursor
-
-1. Download the installer for your OS from <https://cursor.com/download>.
-2. Run the installer:
-   - **Windows** — execute the `.exe` and follow the wizard (installs to `%LOCALAPPDATA%\Programs\cursor`).
-   - **macOS** — open the `.dmg` and drag **Cursor** into `/Applications`.
-   - **Linux** — `chmod +x` the AppImage and launch it (or use the `.deb` / `.rpm`).
-3. Launch Cursor and sign in with GitHub or Google.
-4. Open this project: **File → Open Folder…** → select the repo root.
-5. (Recommended) Install the Playwright VS Code extension when prompted — `ms-playwright.playwright`.
-
-> The `.cursor/mcp.json` and `.github/agents/*.agent.md` files are tracked in the repo, so the moment you open the folder Cursor will pick them up.
-
-#### Install VS Code (GitHub Copilot)
-
-VS Code 1.99+ supports MCP servers natively when **GitHub Copilot Chat** is in **Agent mode**.
-
-1. Download VS Code from <https://code.visualstudio.com/Download>.
-2. Run the installer:
-   - **Windows** — execute the `.exe` (User Installer recommended) and follow the wizard.
-   - **macOS** — open the `.zip` and drag **Visual Studio Code** into `/Applications`.
-   - **Linux** — install the `.deb` (`sudo apt install ./code_*.deb`) or `.rpm`, or use the Snap (`sudo snap install code --classic`).
-3. Launch VS Code and open the project: **File → Open Folder…** → repo root.
-4. Install the required extensions from the Marketplace:
-   - **GitHub Copilot** (`GitHub.copilot`)
-   - **GitHub Copilot Chat** (`GitHub.copilot-chat`)
-   - **Playwright Test for VSCode** (`ms-playwright.playwright`)
-5. Sign in to GitHub when prompted (Copilot subscription required).
-6. Add a workspace MCP config so VS Code reuses the same servers — create `.vscode/mcp.json`:
-
-```json
-{
-  "servers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest", "--browser", "chromium", "--viewport-size", "1280x800"]
-    },
-    "playwright-test": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["playwright", "run-test-mcp-server"]
-    }
-  }
-}
-```
-
-7. Open the Copilot Chat panel (**Ctrl/Cmd + Alt + I**), click the mode dropdown above the input and switch from **Ask** → **Agent**.
-8. Click the **tools** icon (🛠) in the chat input — both `playwright` and `playwright-test` should be listed and toggleable.
-
-> Same `@`-mention syntax works in Copilot Chat (`@playwright`, `@playwright-test`, `@workspace`, `@file`, etc.).
-
-#### Install Codex CLI
-
-The **OpenAI Codex CLI** is a terminal-based coding agent that also speaks MCP — useful when you want to run the same prompts headless or inside CI.
-
-1. Install the CLI globally (requires Node 20+):
+DB is down, schema missing, or seed missing.
 
 ```bash
-npm install -g @openai/codex
+docker compose up -d db
+npm run db:setup
 ```
 
-   Or via Homebrew on macOS / Linux:
+### App stays on loading overlay
+
+Check API and content endpoint:
 
 ```bash
-brew install codex
+curl http://localhost:3001/api/health
+curl http://localhost:3001/api/content
 ```
 
-2. Authenticate (opens a browser the first time):
+### Tests fail at startup
+
+Ensure both app and DB are running:
 
 ```bash
-codex login
-```
-
-3. Open Codex's config file — it lives at:
-   - **Windows** — `%USERPROFILE%\.codex\config.toml`
-   - **macOS / Linux** — `~/.codex/config.toml`
-
-4. Add the same two MCP servers under `[mcp_servers.<name>]`:
-
-```toml
-[mcp_servers.playwright]
-command = "npx"
-args = ["-y", "@playwright/mcp@latest", "--browser", "chromium", "--viewport-size", "1280x800"]
-
-[mcp_servers.playwright-test]
-command = "npx"
-args = ["playwright", "run-test-mcp-server"]
-```
-
-5. Launch Codex from the repo root:
-
-```bash
-cd /path/to/burguer-tenders
-codex
-```
-
-6. Inside the TUI, run `/mcp` to verify both servers are connected. Tools appear as `playwright.*` and `playwright-test.*`.
-
-> Codex picks up `AGENTS.md` (and `.github/agents/*.agent.md`) for project-level instructions — the agents shipped with this repo work the same way they do in Cursor.
-
-#### Enable the MCP servers (Cursor)
-
-> VS Code and Codex CLI users: MCP wiring is already covered in the install subsections above. The steps below are Cursor-specific.
-
-1. Make sure dependencies are installed and the dev server can boot:
-
-```bash
-npm install
-npx playwright install chromium
+docker compose up -d db
+npm run db:setup
 npm run dev:all
 ```
-
-2. Open Cursor settings: **Ctrl/Cmd + ,** → search **MCP** (or open `Cursor → Settings → MCP`).
-3. You should see two entries loaded from `.cursor/mcp.json`:
-   - `playwright`
-   - `playwright-test`
-4. Toggle each one **ON**. The first launch downloads the MCP packages via `npx`, so allow ~30 s on cold start.
-5. A **green dot** next to each server means it's healthy and tools are exposed to the Agent.
-
-> If a server stays red, click **View Logs** on that row — usually it's a missing `npm install` or a port already taken by another `npm run dev:all`.
-
-#### Calling MCPs from chat (`@` mentions)
-
-Switch the chat panel to **Agent** mode (top-right of the chat — not Ask). Then type `@` to open the mention menu. Cursor groups mentions by source; the relevant ones are:
-
-| Mention | What it does |
-|---|---|
-| `@playwright` | Hands the request to the `@playwright/mcp` server — drives a real Chromium window (navigate, click, fill, screenshot, snapshot a11y tree, assert visible text, etc.) |
-| `@playwright-test` | Hands the request to `playwright run-test-mcp-server` — list/run/debug specs, read failures, generate new tests, heal broken selectors |
-| `@Files` / `@Folders` | Pin specs or helpers as context (e.g. `@tests/helpers.ts`) |
-| `@Web` | Lets the agent search the web (handy for Playwright API lookups) |
-
-**Example prompts:**
-
-```text
-@playwright open http://localhost:5173, click the location pin, fill ZIP "10001",
-choose United States, click "Look up address", and screenshot the panel.
-```
-
-```text
-@playwright-test run tests/05-cart.spec.ts and tell me which test fails and why.
-```
-
-```text
-@playwright-test using @tests/helpers.ts and @specs/README.md, generate a new
-spec at tests/10-toast.spec.ts that asserts the cart toast auto-hides after 2.5s.
-```
-
-```text
-@playwright-test the test "Suite 03 — closes when cart opens" is failing — open
-the trace, identify the broken selector, and propose a fix in @tests/03-location-panel.spec.ts.
-```
-
-> Tip: you can chain mentions in one message — e.g. `@playwright` to reproduce the bug in a live browser, then `@playwright-test` to write the regression test.
-
-#### Calling agents from chat (`@` mentions)
-
-The three files under `.github/agents/` register as **Custom Agents** in Cursor. After enabling MCP they show up in the same `@` menu:
-
-| Mention | Backed by | Use it when |
-|---|---|---|
-| `@playwright-test-planner` | `playwright-test-planner.agent.md` | You describe a feature and want a full test plan back |
-| `@playwright-test-generator` | `playwright-test-generator.agent.md` | You want `.spec.ts` files written from a plan or description |
-| `@playwright-test-healer` | `playwright-test-healer.agent.md` | A spec is failing and you want the agent to inspect the trace and fix it |
-
-Typical flow:
-
-```text
-@playwright-test-planner plan a suite that covers the order confirmation page
-(see @src/ui and @tests/07-order-confirmation.spec.ts).
-
-@playwright-test-generator using the plan above, create the missing specs.
-
-@playwright-test-healer run the new specs with @playwright-test and fix anything red.
-```
-
-**Sanity check:** if `@playwright` or `@playwright-test` doesn't show up in the `@` menu, the MCP server isn't running — go back to **Settings → MCP** and confirm both rows are green.

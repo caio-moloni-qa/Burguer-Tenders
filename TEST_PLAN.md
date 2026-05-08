@@ -82,7 +82,7 @@
 **Steps:**
 1. Navigate to `/`.
 2. Collect all `.product-card__price` text values.
-3. Assert each matches the regex `/^\$\d+\.\d{2}$/`.
+3. Assert each price starts with `$`, has dollars, a decimal point, and two cents digits.
 
 **Expected:** All 16 prices match USD currency format.
 
@@ -1043,7 +1043,7 @@ Assert using `.cart-drawer__empty` visibility plus badge class absence.
 2. Close the panel.
 3. Read all `.product-card__price` text values.
 
-**Expected:** Every price matches `/^\$\d+\.\d{2}$/`. No price uses `R$` or comma decimal.
+**Expected:** Every price starts with `$`, includes a decimal point, and has two cents digits. No price uses `R$` or comma decimal.
 
 ---
 

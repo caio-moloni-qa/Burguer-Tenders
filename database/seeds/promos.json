@@ -1,0 +1,17 @@
+[
+  {
+    "id": "combo",
+    "imageSrc": "/images/promos/promo-combo.jpg",
+    "imagePosition": "75% 35%"
+  },
+  {
+    "id": "spicy",
+    "imageSrc": "/images/promos/promo-spicy.jpg",
+    "imagePosition": "75% 28%"
+  },
+  {
+    "id": "delivery",
+    "imageSrc": "/images/promos/promo-delivery.jpg",
+    "imagePosition": "60% 38%"
+  }
+]

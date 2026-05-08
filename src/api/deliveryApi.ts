@@ -1,3 +1,5 @@
+import { t } from "../i18n/locale";
+
 export type DeliveryPayload = {
   zipCode: string;
   countryCode: string;
@@ -14,7 +16,7 @@ export type DeliveryPayload = {
 export async function fetchDelivery(): Promise<DeliveryPayload | null> {
   const res = await fetch("/api/delivery", { credentials: "include" });
   if (!res.ok) {
-    throw new Error("Failed to load delivery");
+    throw new Error(t("locationLoadError"));
   }
   const data: { delivery: DeliveryPayload | null } = await res.json();
   return data.delivery;
@@ -29,7 +31,7 @@ export async function saveDelivery(body: DeliveryPayload): Promise<DeliveryPaylo
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(typeof data.error === "string" ? data.error : "Could not save location");
+    throw new Error(typeof data.error === "string" ? data.error : t("locationSaveError"));
   }
   return data.delivery as DeliveryPayload;
 }

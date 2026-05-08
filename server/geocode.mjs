@@ -1,3 +1,5 @@
+import { digitsOnly } from "./text.mjs";
+
 /**
  * OpenStreetMap Nominatim returns `address` with keys like road, city, postcode.
  * @see https://nominatim.org/release-docs/develop/api/Search/
@@ -29,7 +31,7 @@ export function parseAddressFromNominatim(hit, fallbackPostal) {
 
   // Brazilian CEP: keep 12345-678 form when present
   if (a.country_code === "br" && zipCode && !zipCode.includes("-")) {
-    const d = zipCode.replace(/\D/g, "");
+    const d = digitsOnly(zipCode);
     if (d.length === 8) {
       zipCode = `${d.slice(0, 5)}-${d.slice(5)}`;
     }
@@ -54,13 +56,13 @@ export function normalizePostalForLookup(postal, countryCode) {
   const cc = String(countryCode || "US").toUpperCase();
   const raw = String(postal || "").trim();
   if (cc === "BR") {
-    const digits = raw.replace(/\D/g, "");
+    const digits = digitsOnly(raw);
     if (digits.length === 8) {
       return `${digits.slice(0, 5)}-${digits.slice(5)}`;
     }
     return raw;
   }
-  const us = raw.replace(/\D/g, "").slice(0, 9);
+  const us = digitsOnly(raw, 9);
   if (us.length >= 5) {
     return us.slice(0, 5);
   }
@@ -69,6 +71,6 @@ export function normalizePostalForLookup(postal, countryCode) {
 
 /** 8-digit string for BR CEP fallbacks (digits only). */
 export function brCepDigits(postal) {
-  const d = String(postal || "").replace(/\D/g, "");
+  const d = digitsOnly(postal);
   return d.length === 8 ? d : "";
 }
